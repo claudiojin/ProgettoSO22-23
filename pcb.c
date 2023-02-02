@@ -159,24 +159,24 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         return NULL;
     }
     // faccio puntare tmp al primo elemento della lista
-    pcb_t *tmp = container_of(head->next, pcb_t, p_list);
-    tmp->p_list.next = head->next;
+    //pcb_t *tmp = container_of(head->next, pcb_t, p_list);
+    //tmp->p_list.next = head->next;
     //tmp->p_child.prev = head;
-    if (tmp != p)
+    struct list_head *pos = head->next;
+    if (container_of(pos, pcb_t, p_list) != p)
     {
-        //struct list_head *pos = head->next;
         // caso generale
-        while (&(tmp->p_list) != head)
+        while (pos != head)
         {
-            if (tmp == p)
+            if (container_of(pos, pcb_t, p_list) == p)
             {
-                tmp->p_list.prev->next = tmp->p_list.next;
-                tmp->p_list.next->prev = tmp->p_list.prev;
-                tmp->p_list.next = NULL;
-                tmp->p_list.prev = NULL;
-                return tmp;
+                pos->prev->next = pos->next;
+                pos->next->prev = pos->prev;
+                pos->next = NULL;
+                pos->prev = NULL;
+                return container_of(pos, pcb_t, p_list);
             }
-            tmp = tmp->p_list.next;
+            pos = pos->next;
         }
         // se non trova nulla ritorno NULL
         return NULL;
@@ -185,10 +185,10 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
     else
     {
         // elimino il primo nodo e inizializzo head in modo che list_empty(head) mi ritorni true
-        tmp->p_list.next = NULL;
-        tmp->p_list.prev = NULL;
+        pos->next = NULL;
+        pos->prev = NULL;
         INIT_LIST_HEAD(head);
-        return tmp;
+        return container_of(pos, pcb_t, p_list);
     }
 }
 
