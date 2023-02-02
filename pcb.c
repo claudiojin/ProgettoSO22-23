@@ -161,11 +161,12 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
     // faccio puntare tmp al primo elemento della lista
     pcb_t *tmp = container_of(head->next, pcb_t, p_list);
     tmp->p_list.next = head->next;
-    tmp->p_child.prev = head;
+    //tmp->p_child.prev = head;
     if (tmp != p)
     {
+        //struct list_head *pos = head->next;
         // caso generale
-        while (tmp != head)
+        while (&(tmp->p_list) != head)
         {
             if (tmp == p)
             {
