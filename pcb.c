@@ -98,7 +98,7 @@ void insertProcQ(struct list_head *head, pcb_t *p)
         {
             list_add_tail(&(p->p_list), head);
             /*
-            head->prev->next = &(p->p_list); 
+            head->prev->next = &(p->p_list);
             p->p_list.prev = head->prev;
             head->prev = &(p->p_list);
             p->p_list.next = head;
@@ -117,7 +117,7 @@ pcb_t *headProcQ(struct list_head *head)
     }
     else
     {
-        //ritorna il puntatore al primo elemento della lista(head->next), castando a *pcb_t
+        // ritorna il puntatore al primo elemento della lista(head->next), castando a *pcb_t
         return container_of(head->next, pcb_t, p_list);
     }
 }
@@ -133,7 +133,7 @@ pcb_t *removeProcQ(struct list_head *head)
     else if (head->next->next == head->prev)
     {
         pcb_t *tmp = container_of(head->next, pcb_t, p_list);
-        //container_of(tmp, pcb_t, p_list);
+        // container_of(tmp, pcb_t, p_list);
         list_del(head->next);
         // reinizializzo la sentinella
         INIT_LIST_HEAD(head);
@@ -161,13 +161,10 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         return NULL;
     }
     // faccio puntare tmp al primo elemento della lista
-    //pcb_t *tmp = container_of(head->next, pcb_t, p_list);
-    //tmp->p_list.next = head->next;
-    //tmp->p_child.prev = head;
     struct list_head *pos = head->next;
+    // caso generale
     if (container_of(pos, pcb_t, p_list) != p)
     {
-        // caso generale
         while (pos != head)
         {
             if (container_of(pos, pcb_t, p_list) == p)
@@ -182,12 +179,18 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         // se non trova nulla ritorno NULL
         return NULL;
     }
-    // caso in cui il pcb da rimuovere è il primo della lista
+    // caso in cui il pcb da rimuovere è il primo della lista e la lista è di più elementi
+    else if((container_of(pos, pcb_t, p_list) == p) && (pos->next != head)) {
+        head = pos->next;
+        pos->next->prev = head;
+        list_del(pos);
+        return container_of(pos, pcb_t, p_list);
+    }
+    // caso in cui il pcb è in testa ed è l'unico elemento della lista
     else
     {
         // elimino il primo nodo e inizializzo head in modo che list_empty(head) mi ritorni true
-        pos->next = NULL;
-        pos->prev = NULL;
+        list_del(pos);
         INIT_LIST_HEAD(head);
         return container_of(pos, pcb_t, p_list);
     }
