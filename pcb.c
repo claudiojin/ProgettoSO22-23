@@ -88,7 +88,7 @@ void insertProcQ(struct list_head *head, pcb_t *p)
     if (p != NULL)
     {
         // caso: coda vuota
-        if (list_empty(head))   
+        if (list_empty(head))
         {
             head->next = &(p->p_list);
             head->prev = &(p->p_list);
@@ -131,7 +131,7 @@ pcb_t *removeProcQ(struct list_head *head)
     // lista vuota
     if (list_empty(head))
         return NULL;
-    //punta al primo elemento della lista
+    // punta al primo elemento della lista
     struct list_head *pos = head->next;
     // lista di un singolo elemento
     if (pos->next == head)
@@ -179,7 +179,8 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         return NULL;
     }
     // caso in cui il pcb da rimuovere è il primo della lista e la lista è di più elementi
-    else if((container_of(pos, pcb_t, p_list) == p) && (pos->next != head)) {
+    else if ((container_of(pos, pcb_t, p_list) == p) && (pos->next != head))
+    {
         head = pos->next;
         pos->next->prev = head;
         list_del(pos);
@@ -209,15 +210,19 @@ int emptyChild(pcb_t *p)
 // Inserisce il PCB puntato da p come figlio del PCB puntato da prnt.
 void insertChild(pcb_t *prnt, pcb_t *p)
 {
-    pcb_t *tmp = prnt->p_child.next;
     if (prnt != NULL && p != NULL)
     {
-        // caso: prnt ha già almeno un figlio
-        if (tmp != NULL)
+        // punta al figlio (testa della lista dei figli)
+        pcb_t *h_child = prnt->p_child.next;
+        // caso: prnt ha dei figli -> inserimento in testa
+        if (h_child != NULL)
         {
-            prnt->p_child.next = p;
-            p->p_sib.next = tmp;
+            // inserisco p in testa
+            p->p_sib.next = h_child;
             p->p_sib.prev = NULL;
+            h_child->p_sib.prev = p;
+            // h_child non è più il figlio di prnt
+            prnt->p_child.next = p;
             p->p_parent = prnt;
         }
         // caso: prnt non ha figli
@@ -234,7 +239,7 @@ void insertChild(pcb_t *prnt, pcb_t *p)
 // Rimuove il primo figlio del PCB puntato da p. Se p non ha figli, restituisce NULL
 pcb_t *removeChild(pcb_t *p)
 {
-    if (p == NULL && p->p_child.next == NULL)
+    if (p == NULL || p->p_child.next == NULL)
         return NULL;
     else
     {
