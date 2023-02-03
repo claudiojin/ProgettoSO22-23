@@ -96,11 +96,13 @@ void insertProcQ(struct list_head *head, pcb_t *p)
         // caso: inserimento con sentinella
         else
         {
-            //list_add_tail(p, head);
+            list_add_tail(&(p->p_list), head);
+            /*
             head->prev->next = &(p->p_list); 
             p->p_list.prev = head->prev;
             head->prev = &(p->p_list);
             p->p_list.next = head;
+            */
         }
     }
 }
@@ -172,8 +174,7 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
             {
                 pos->prev->next = pos->next;
                 pos->next->prev = pos->prev;
-                pos->next = NULL;
-                pos->prev = NULL;
+                list_del(pos);
                 return container_of(pos, pcb_t, p_list);
             }
             pos = pos->next;
