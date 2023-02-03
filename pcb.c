@@ -88,10 +88,12 @@ void insertProcQ(struct list_head *head, pcb_t *p)
     if (p != NULL)
     {
         // caso: coda vuota
-        if (list_empty(head))
+        if (list_empty(head))   
         {
             head->next = &(p->p_list);
             head->prev = &(p->p_list);
+            p->p_list.next = head;
+            p->p_list.prev = head;
         }
         // caso: inserimento con sentinella
         else
@@ -157,10 +159,8 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 {
     // controllo che non sia vuota la coda o il puntatore al pcb sia NULL
     if (list_empty(head) || p == NULL)
-    {
         return NULL;
-    }
-    // faccio puntare tmp al primo elemento della lista
+    // faccio puntare pos al primo elemento della lista
     struct list_head *pos = head->next;
     // caso generale
     if (container_of(pos, pcb_t, p_list) != p)
