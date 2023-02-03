@@ -131,25 +131,24 @@ pcb_t *removeProcQ(struct list_head *head)
     // lista vuota
     if (list_empty(head))
         return NULL;
-    // un elemento, il nodo dopo head punta di nuovo alla sentinella
-    else if (head->next->next == head->prev)
+    //punta al primo elemento della lista
+    struct list_head *pos = head->next;
+    // lista di un singolo elemento
+    if (pos->next == head)
     {
-        pcb_t *tmp = container_of(head->next, pcb_t, p_list);
         // container_of(tmp, pcb_t, p_list);
-        list_del(head->next);
+        list_del(pos);
         // reinizializzo la sentinella
         INIT_LIST_HEAD(head);
-        return tmp;
+        return container_of(pos, pcb_t, p_list);
     }
     // più di un elemento
     else
     {
-        pcb_t *tmp = container_of(head->next, pcb_t, p_list);
-        head->next = head->next->next;
-        head->next->prev = head;
-        tmp->p_list.next = NULL;
-        tmp->p_list.prev = NULL;
-        return tmp;
+        head->next = pos->next;
+        pos->next->prev = head;
+        list_del(pos);
+        return container_of(pos, pcb_t, p_list);
     }
 }
 
