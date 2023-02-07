@@ -15,19 +15,20 @@ pcb_t *pcbFree_h;
 // Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.
 void initPcbs()
 {
-    // è la testa della lista e testa deve rimanere
+    // inizializzo la testa della lista
     pcbFree_h = &pcbFree_table[0];
+    pcbFree_h->p_list.next = NULL;
     pcbFree_h->p_list.prev = NULL;
-    pcb_t *head = pcbFree_h;
+    pcb_t *tmp = pcbFree_h;
+
     for (int i = 1; i < MAXPROC; i++)
     {
-        head->p_list.next = &pcbFree_table[i];
+        tmp->p_list.next = &pcbFree_table[i];
         // lista monodirezionale: non mi serve il prev
-        head->p_list.prev = NULL;
-        head = head->p_list.next;
+        tmp->p_list.prev = NULL;
+        tmp = tmp->p_list.next;
+        tmp->p_list.next = NULL;
     }
-    // chiudo la lista
-    head->p_list.next = NULL;
 }
 
 // Inserisce il PCB puntato da p nella lista dei PCB liberi (pcbFree_h)
@@ -99,12 +100,6 @@ void insertProcQ(struct list_head *head, pcb_t *p)
         else
         {
             list_add_tail(&(p->p_list), head);
-            /*
-            head->prev->next = &(p->p_list);
-            p->p_list.prev = head->prev;
-            head->prev = &(p->p_list);
-            p->p_list.next = head;
-            */
         }
     }
 }
@@ -156,10 +151,10 @@ pcb_t *removeProcQ(struct list_head *head)
 // restituisce NULL. (NOTA: p può trovarsi in una posizione arbitraria della coda).
 pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 {
-    // controllo che non sia vuota la coda o il puntatore al pcb sia NULL
+    // coda vuota o il puntatore al pcb è NULL
     if (list_empty(head) || p == NULL)
         return NULL;
-    // faccio puntare pos al primo elemento della lista
+    // pos punta al primo elemento della lista
     struct list_head *pos = head->next;
     // caso generale
     if (container_of(pos, pcb_t, p_list) != p)
@@ -178,7 +173,7 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         // se non trova nulla ritorno NULL
         return NULL;
     }
-    // caso in cui il pcb da rimuovere è il primo della lista e la lista è di più elementi
+    // caso: il pcb da rimuovere è il primo della lista e la lista è di più elementi
     else if ((container_of(pos, pcb_t, p_list) == p) && (pos->next != head))
     {
         head = pos->next;
@@ -186,7 +181,7 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         list_del(pos);
         return container_of(pos, pcb_t, p_list);
     }
-    // caso in cui il pcb è in testa ed è l'unico elemento della lista
+    // caso: il pcb è in testa ed è l'unico elemento della lista
     else
     {
         // elimino il primo nodo e inizializzo head in modo che list_empty(head) mi ritorni true
@@ -276,18 +271,24 @@ pcb_t *outChild(pcb_t *p)
         {
             return removeChild(p->p_parent);
         }
-        // caso: ha dei fratelli, ricollego il fratello a dx con quello a sx
+        // caso: non è il primo fratello
         else
         {
             // è l'ultimo figlio
             if (p->p_sib.next == NULL)
+            {
                 tmp->p_sib.next = NULL;
+                p->p_sib.prev = NULL;
+            }
+            // caso generale
             else
             {
                 tmp->p_sib.next = p->p_sib.next;
                 p->p_sib.next->prev = tmp;
+                p->p_sib.next = NULL;
+                p->p_sib.prev = NULL;
             }
+            return p;
         }
-        return p;
     }
 }
