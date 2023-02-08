@@ -7,9 +7,9 @@
  */
 
 // array di PCB con dimensione massima di MAX_PROC, è un pool di memoria
-pcb_t pcbFree_table[MAXPROC];
+static pcb_t pcbFree_table[MAXPROC];
 // testa della lista dei PCB che sono liberi o inutilizzati
-pcb_t *pcbFree_h;
+static pcb_t *pcbFree_h;
 
 // Inizializza la lista pcbFree in modo da contenere tutti gli elementi della pcbFree_table.
 // Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.

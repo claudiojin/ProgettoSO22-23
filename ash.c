@@ -10,7 +10,7 @@ semd_t *semdFree_h;
 // come cristo si dichiara la HASH, con DEFINE_HASH? ma crea un'array di tipo hlist_head, che ha
 // un puntatore al concatenatore hlist_node, ma a che minchia serve una bilista di semd se sto usando una hash table zio pera.
 // questa bilista servirebbe al massimo per un eventuale gestione delle collisioni, dove per
-DEFINE_HASHTABLE(semd_h, 10);
+DEFINE_HASHTABLE(semd_h, 5);
 
 /*
 Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd.
@@ -24,7 +24,7 @@ int insertBlocked(int *semAdd, pcb_t *p)
     if (semAdd != NULL && p != NULL)
     {
         // semd associato a semAdd
-        semd_t *tmp = semd_h[*semAdd].first; //container_of(semd_h[*semAdd].first, semd_t, s_link);
+        semd_t *tmp = semd_h[*semAdd].first; // container_of(semd_h[*semAdd].first, semd_t, s_link);
         // caso: il semd non è presente nella ASH -> alloco un nuovo semd e aggiungo alla ASH
         if (tmp == NULL)
         {
@@ -34,9 +34,10 @@ int insertBlocked(int *semAdd, pcb_t *p)
             {
                 // eliminazione in testa dalla lista dei semdFree
                 tmp = semdFree_h;
-                semdFree_h = &(semdFree_h->s_freelink.next);//container_of(semdFree_h->s_freelink.next, semd_t, s_freelink);
+                semdFree_h = &(semdFree_h->s_freelink.next); // container_of(semdFree_h->s_freelink.next, semd_t, s_freelink);
                 // setto i campi del nuovo semd
                 tmp->s_freelink.next = NULL;
+                // tmp->s_freelink.prev = &(semd_h[*semAdd]);
                 tmp->s_key = semAdd;
                 // inizializzo la sentinella della lista di PCB nel campo s_procq
                 mkEmptyProcQ(&(tmp->s_procq));
@@ -61,7 +62,30 @@ Se tale descrittore non esiste nella ASH, restituisce NULL. Altrimenti, restitui
 dei processi bloccati per il semaforo diventa vuota, rimuove il descrittore corrispondente dalla ASH e lo inserisce nella
 coda dei descrittori liberi (semdFree_h).
 */
-pcb_t *removeBlocked(int *semAdd) {}
+pcb_t *removeBlocked(int *semAdd)
+{
+    if (semAdd == NULL)
+        return NULL;
+    semd_t *tmp = semd_h[*semAdd].first;
+    // caso: semd non è nella ASH
+    if (tmp == NULL)
+        return NULL;
+    // caso: semd è nella ASH
+    else
+    {
+        // dopo la rimozione controllo se la lista procQ è vuota
+        pcb_t *p = removeProcQ(&(tmp->s_procq));
+        if (list_empty(&(tmp->s_procq)))
+        {
+            // rimuovo il semd dalla ASH
+            hash_del(&(tmp->s_link));
+            // inserisco nella testa di semdFree_h
+            tmp->s_freelink.next = semdFree_h;
+            semdFree_h = &(tmp->s_freelink);
+        }
+        return p;
+    }
+}
 /*
 Rimuove il PCB puntato da p dalla coda del semaforo su cui è bloccato (indicato da p->p_semAdd). Se il PCB non compare
 in tale coda, allora restituisce NULL (condizione di errore). Altrimenti, restituisce p. Se la coda dei processi bloccati
@@ -87,8 +111,8 @@ void initASH()
     {
         tmp->s_freelink.next = &semd_table[i];
         // lista monodirezionale
-        tmp->s_freelink.prev = NULL;
         tmp = tmp->s_freelink.next;
+        tmp->s_freelink.prev = NULL;
         tmp->s_freelink.next = NULL;
     }
 }
