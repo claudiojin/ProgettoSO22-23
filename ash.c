@@ -21,10 +21,13 @@ In tutti gli altri casi, restituisce FALSE.
 */
 int insertBlocked(int *semAdd, pcb_t *p)
 {
+    char *key_val = (int)semAdd;
+    addokbuf("Value of key semAdd: ");
+    addokbuf(key_val);
     if (semAdd != NULL && p != NULL)
     {
         // semd associato a semAdd
-        semd_t *tmp = semd_h[*semAdd].first; // container_of(semd_h[*semAdd].first, semd_t, s_link);
+        semd_t *tmp = semd_h[(int)semAdd].first; // container_of(semd_h[*semAdd].first, semd_t, s_link);
         // caso: il semd non è presente nella ASH -> alloco un nuovo semd e aggiungo alla ASH
         if (tmp == NULL)
         {
@@ -43,7 +46,7 @@ int insertBlocked(int *semAdd, pcb_t *p)
                 mkEmptyProcQ(&(tmp->s_procq));
                 // aggiungo p alla lista
                 insertProcQ(&(tmp->s_procq), p);
-                hash_add(semd_h, &(tmp->s_link), semAdd);
+                hash_add(semd_h, &(tmp->s_link), (int)semAdd);
                 return false;
             }
         }
@@ -66,7 +69,7 @@ pcb_t *removeBlocked(int *semAdd)
 {
     if (semAdd == NULL)
         return NULL;
-    semd_t *tmp = semd_h[*semAdd].first;
+    semd_t *tmp = semd_h[(int)semAdd].first;
     // caso: semd non è nella ASH
     if (tmp == NULL)
         return NULL;

@@ -5,6 +5,7 @@
 #include "types.h"
 #include "hashtable.h"
 #include "pcb.h"
+#include <umps3/umps/libumps.h>
 
 // ASH module
 
