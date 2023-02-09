@@ -67,6 +67,7 @@ unsigned int termprint(char *str, unsigned int term)
 
     return (!error);
 }
+
 void addokbuf(char *strp)
 {
     char *tstrp = strp;
