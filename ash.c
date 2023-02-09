@@ -6,11 +6,25 @@ semd_t semd_table[MAXPROC];
 // ogni semd ha accesso alla lista dei semd liberi semdFree_h tramite il campo s_freelink
 semd_t *semdFree_h;
 
-// Hash dei semafori attivi (ASH), su un singolo semaforo ci possono essere più PCB in attesa
-// come cristo si dichiara la HASH, con DEFINE_HASH? ma crea un'array di tipo hlist_head, che ha
-// un puntatore al concatenatore hlist_node, ma a che minchia serve una bilista di semd se sto usando una hash table zio pera.
-// questa bilista servirebbe al massimo per un eventuale gestione delle collisioni, dove per
+/* Hash dei semafori attivi (ASH), su un singolo semaforo ci possono essere più PCB in attesa
+ * di seguito alcune domande che mi pongo da almeno 3 giorni
+ * 1) la dimensione della hash table influenza direttamente il numero di bit della chiave, ma se la chiave(semAdd) che usiamo
+ *    è l'indirizzo di un intero, non dovrei creare una hash con chiavi di bit pari a quelli dell' indirizzo di un intero?
+ *    Ma visto che il massimo di SEMD su una singola hash è 20, allora non ha senso avere una dimensione così grande solo per
+ *    far coincidere n_bit_addres == n_bit_key, mi servirebbe un afunzione hash per mappare il tutto
+ * 2) capire come dovrebbe essere lo schema della hash table
+ * 3) operazione di ricerca, come si fa?
+ */
 DEFINE_HASHTABLE(semd_h, 5);
+/*char *from_i_to_s(int *addr)
+{
+    int length = snprintf(NULL, 0, "%d", (int)addr);
+    char *str = malloc(length + 1);
+    snprintf(str, length + 1, "%d", (int)addr);
+    // int length = snprintf(NULL, 0, "%x", (int)addr);
+    // snprintf(address, length + 1, "%d", (int)addr);
+    return str;
+}*/
 
 /*
 Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd.
@@ -21,13 +35,15 @@ In tutti gli altri casi, restituisce FALSE.
 */
 int insertBlocked(int *semAdd, pcb_t *p)
 {
-    char *key_val = (int)semAdd;
-    addokbuf("Value of key semAdd: ");
-    addokbuf(key_val);
+    // int key_val = (int)semAdd;
+    // addokbuf("Value of key semAdd: ");
+    // addokbuf(from_i_to_s(semAdd));
     if (semAdd != NULL && p != NULL)
     {
         // semd associato a semAdd
-        semd_t *tmp = semd_h[(int)semAdd].first; // container_of(semd_h[*semAdd].first, semd_t, s_link);
+        semd_t *tmp = NULL;
+        hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd);
+        // semd_t *tmp = semd_h[(int)semAdd].first; // container_of(semd_h[*semAdd].first, semd_t, s_link);
         // caso: il semd non è presente nella ASH -> alloco un nuovo semd e aggiungo alla ASH
         if (tmp == NULL)
         {
@@ -37,14 +53,15 @@ int insertBlocked(int *semAdd, pcb_t *p)
             {
                 // eliminazione in testa dalla lista dei semdFree
                 tmp = semdFree_h;
-                semdFree_h = &(semdFree_h->s_freelink.next); // container_of(semdFree_h->s_freelink.next, semd_t, s_freelink);
+                semdFree_h = semdFree_h->s_freelink.next; // container_of(semdFree_h->s_freelink.next, semd_t, s_freelink);
                 // setto i campi del nuovo semd
                 tmp->s_freelink.next = NULL;
                 // tmp->s_freelink.prev = &(semd_h[*semAdd]);
                 tmp->s_key = semAdd;
-                // inizializzo la sentinella della lista di PCB nel campo s_procq
+                // s_procq è la sentinella della lista di pcb associati al semd
                 mkEmptyProcQ(&(tmp->s_procq));
-                // aggiungo p alla lista
+                // aggiorno il campo semAdd del pcb e lo aggiungo alla lista
+                p->p_semAdd = semAdd;
                 insertProcQ(&(tmp->s_procq), p);
                 hash_add(semd_h, &(tmp->s_link), (int)semAdd);
                 return false;
@@ -69,7 +86,8 @@ pcb_t *removeBlocked(int *semAdd)
 {
     if (semAdd == NULL)
         return NULL;
-    semd_t *tmp = semd_h[(int)semAdd].first;
+    semd_t *tmp = NULL; //= semd_h[(int)semAdd].first;
+    hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd);
     // caso: semd non è nella ASH
     if (tmp == NULL)
         return NULL;
@@ -84,7 +102,7 @@ pcb_t *removeBlocked(int *semAdd)
             hash_del(&(tmp->s_link));
             // inserisco nella testa di semdFree_h
             tmp->s_freelink.next = semdFree_h;
-            semdFree_h = &(tmp->s_freelink);
+            semdFree_h = tmp;
         }
         return p;
     }

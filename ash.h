@@ -5,8 +5,9 @@
 #include "types.h"
 #include "hashtable.h"
 #include "pcb.h"
-#include <umps3/umps/libumps.h>
-
+#include "library.h"
+#include <stdio.h>
+#include <stdlib.h>
 // ASH module
 
 int insertBlocked(int *semAdd, pcb_t *p);
