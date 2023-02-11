@@ -25,8 +25,8 @@ void initPcbs()
     {
         tmp->p_list.next = &(pcbFree_table[i].p_list);
         // lista monodirezionale: non mi serve il prev
-        tmp->p_list.prev = NULL;
         tmp = container_of(tmp->p_list.next, pcb_t, p_list);
+        tmp->p_list.prev = NULL;
         tmp->p_list.next = NULL;
     }
 }
@@ -48,9 +48,7 @@ void freePcb(pcb_t *p)
 pcb_t *allocPcb()
 {
     if (pcbFree_h == NULL)
-    {
         return NULL;
-    }
     else
     {
         // rimozione in testa
@@ -98,9 +96,7 @@ void insertProcQ(struct list_head *head, pcb_t *p)
         }
         // caso: inserimento con sentinella
         else
-        {
             list_add_tail(&(p->p_list), head);
-        }
     }
 }
 
@@ -109,14 +105,10 @@ void insertProcQ(struct list_head *head, pcb_t *p)
 pcb_t *headProcQ(struct list_head *head)
 {
     if (list_empty(head))
-    {
         return NULL;
-    }
     else
-    {
         // ritorna il puntatore al primo elemento della lista(head->next), castando a *pcb_t
         return container_of(head->next, pcb_t, p_list);
-    }
 }
 
 // Rimuove il primo elemento dalla coda dei processi puntata da head. Ritorna NULL se la coda è vuota.
@@ -183,9 +175,7 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 int emptyChild(pcb_t *p)
 {
     if (list_empty(&(p->p_child)))
-    {
         return true;
-    }
     else
         return false;
 }
@@ -195,30 +185,8 @@ void insertChild(pcb_t *prnt, pcb_t *p)
 {
     if (prnt != NULL && p != NULL)
     {
-        // struct list_head *tmp;
         list_add(&p->p_sib, &prnt->p_child);
         p->p_parent = prnt;
-        // punta al figlio (testa della lista dei figli)
-        /*pcb_t *h_child = prnt->p_child.next;
-        // caso: prnt ha dei figli -> inserimento in testa
-        if (h_child != NULL)
-        {
-            // inserisco p in testa
-            p->p_sib.next = h_child;
-            p->p_sib.prev = NULL;
-            h_child->p_sib.prev = p;
-            // h_child non è più il figlio di prnt
-            prnt->p_child.next = p;
-            p->p_parent = prnt;
-        }
-        // caso: prnt non ha figli
-        else
-        {
-            p->p_parent = prnt;
-            prnt->p_child.next = p;
-            p->p_sib.next = NULL;
-            p->p_sib.prev = NULL;
-        }*/
     }
 }
 
