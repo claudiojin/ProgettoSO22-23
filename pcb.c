@@ -234,7 +234,6 @@ pcb_t *outChild(pcb_t *p)
         // caso: non è il primo fratello
         else
         {
-            // caso generale
             tmp->next = p->p_sib.next;
             p->p_sib.next->prev = tmp;
             list_del(&p->p_sib);
