@@ -12,13 +12,6 @@ semd_t *semdFree_h;
 // questa bilista servirebbe al massimo per un eventuale gestione delle collisioni, dove per
 DEFINE_HASHTABLE(semd_h, 5);
 
-/**
- * Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd.
- * Se il semaforo corrispondente non è presente nella ASH, alloca un nuovo SEMD dalla lista di quelli liberi
- * (semdFree) e lo inserisce nella ASH, settando I campi in maniera opportuna (i.e.key e s_procQ).
- * Se non è possibile allocare un nuovo SEMD perché la lista di quelli liberi è vuota, restituisce TRUE.
- * In tutti gli altri casi, restituisce FALSE.
- */
 int insertBlocked(int *semAdd, pcb_t *p)
 {
     if (semAdd != NULL && p != NULL)
@@ -61,11 +54,11 @@ int insertBlocked(int *semAdd, pcb_t *p)
     return false;
 }
 /*
- * Ritorna il primo PCB dalla coda dei processi bloccati (s_procq) associata al SEMD della ASH con chiave semAdd.
- * Se tale descrittore non esiste nella ASH, restituisce NULL. Altrimenti, restituisce l’elemento rimosso. Se la coda
- * dei processi bloccati per il semaforo diventa vuota, rimuove il descrittore corrispondente dalla ASH e lo inserisce nella
- * coda dei descrittori liberi (semdFree_h).
- */
+Ritorna il primo PCB dalla coda dei processi bloccati (s_procq) associata al SEMD della ASH con chiave semAdd.
+Se tale descrittore non esiste nella ASH, restituisce NULL. Altrimenti, restituisce l’elemento rimosso. Se la coda
+dei processi bloccati per il semaforo diventa vuota, rimuove il descrittore corrispondente dalla ASH e lo inserisce nella
+coda dei descrittori liberi (semdFree_h).
+*/
 pcb_t *removeBlocked(int *semAdd)
 {
     if (semAdd == NULL)
