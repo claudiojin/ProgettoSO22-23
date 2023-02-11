@@ -109,9 +109,9 @@ void initASH()
     semd_t *tmp = semdFree_h;
     for (int i = 1; i < MAXPROC; i++)
     {
-        tmp->s_freelink.next = &semd_table[i];
+        tmp->s_freelink.next = &(semd_table[i].s_freelink);
         // lista monodirezionale
-        tmp = tmp->s_freelink.next;
+        tmp = container_of(tmp->s_freelink.next, semd_t, s_freelink);
         tmp->s_freelink.prev = NULL;
         tmp->s_freelink.next = NULL;
     }
