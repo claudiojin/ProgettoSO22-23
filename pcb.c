@@ -23,10 +23,10 @@ void initPcbs()
 
     for (int i = 1; i < MAXPROC; i++)
     {
-        tmp->p_list.next = &pcbFree_table[i];
+        tmp->p_list.next = &(pcbFree_table[i].p_list);
         // lista monodirezionale: non mi serve il prev
         tmp->p_list.prev = NULL;
-        tmp = tmp->p_list.next;
+        tmp = container_of(tmp->p_list.next, pcb_t, p_list);
         tmp->p_list.next = NULL;
     }
 }
@@ -38,7 +38,7 @@ void freePcb(pcb_t *p)
     if (p != NULL)
     {
         p->p_list.prev = NULL;
-        p->p_list.next = pcbFree_h;
+        p->p_list.next = &(pcbFree_h->p_list);
         pcbFree_h = p;
     }
 }
@@ -174,21 +174,8 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         return NULL;
     }
     // caso: il pcb da rimuovere è il primo della lista e la lista è di più elementi
-    else if ((container_of(pos, pcb_t, p_list) == p) && (pos->next != head))
-    {
-        head = pos->next;
-        pos->next->prev = head;
-        list_del(pos);
-        return container_of(pos, pcb_t, p_list);
-    }
-    // caso: il pcb è in testa ed è l'unico elemento della lista
-    else
-    {
-        // elimino il primo nodo e inizializzo head in modo che list_empty(head) mi ritorni true
-        list_del(pos);
-        INIT_LIST_HEAD(head);
-        return container_of(pos, pcb_t, p_list);
-    }
+    else 
+        return removeProcQ(head);
 }
 
 // Restituisce TRUE se il PCB puntato da p non ha figli, FALSE altrimenti.
