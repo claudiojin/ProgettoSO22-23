@@ -16,15 +16,6 @@ semd_t *semdFree_h;
  * 3) operazione di ricerca, come si fa?
  */
 DEFINE_HASHTABLE(semd_h, 5);
-/*char *from_i_to_s(int *addr)
-{
-    int length = snprintf(NULL, 0, "%d", (int)addr);
-    char *str = malloc(length + 1);
-    snprintf(str, length + 1, "%d", (int)addr);
-    // int length = snprintf(NULL, 0, "%x", (int)addr);
-    // snprintf(address, length + 1, "%d", (int)addr);
-    return str;
-}*/
 
 /*
 Viene inserito il PCB puntato da p nella coda dei processi bloccati associata al SEMD con chiave semAdd.
@@ -35,9 +26,6 @@ In tutti gli altri casi, restituisce FALSE.
 */
 int insertBlocked(int *semAdd, pcb_t *p)
 {
-    // int key_val = (int)semAdd;
-    // addokbuf("Value of key semAdd: ");
-    // addokbuf(from_i_to_s(semAdd));
     if (semAdd != NULL && p != NULL)
     {
         // semd associato a semAdd
@@ -70,6 +58,7 @@ int insertBlocked(int *semAdd, pcb_t *p)
         // caso: il semd è nella ASH -> aggiungo p alla pcb queue del SEMD
         else
         {
+            p->p_semAdd = semAdd;
             insertProcQ(&(tmp->s_procq), p);
             return false;
         }
