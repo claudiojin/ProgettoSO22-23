@@ -23,10 +23,10 @@ void initPcbs()
 
     for (int i = 1; i < MAXPROC; i++)
     {
-        tmp->p_list.next = &pcbFree_table[i];
+        tmp->p_list.next = &(pcbFree_table[i].p_list);
         // lista monodirezionale: non mi serve il prev
         tmp->p_list.prev = NULL;
-        tmp = tmp->p_list.next;
+        tmp = container_of(tmp->p_list.next, pcb_t, p_list);
         tmp->p_list.next = NULL;
     }
 }
@@ -38,7 +38,7 @@ void freePcb(pcb_t *p)
     if (p != NULL)
     {
         p->p_list.prev = NULL;
-        p->p_list.next = pcbFree_h;
+        p->p_list.next = &(pcbFree_h->p_list);
         pcbFree_h = p;
     }
 }

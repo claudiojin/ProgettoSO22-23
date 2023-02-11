@@ -6,9 +6,8 @@
 #include "hashtable.h"
 #include "pcb.h"
 #include "library.h"
-#include <stdio.h>
-#include <stdlib.h>
-// ASH module
+
+//  ASH module
 
 int insertBlocked(int *semAdd, pcb_t *p);
 pcb_t *removeBlocked(int *semAdd);
