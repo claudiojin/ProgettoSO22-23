@@ -173,21 +173,9 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         // se non trova nulla ritorno NULL
         return NULL;
     }
-    // caso: il pcb da rimuovere è il primo della lista e la lista è di più elementi
-    else if ((container_of(pos, pcb_t, p_list) == p) && (pos->next != head))
-    {
-        head = pos->next;
-        pos->next->prev = head;
-        list_del(pos);
-        return container_of(pos, pcb_t, p_list);
-    }
-    // caso: il pcb è in testa ed è l'unico elemento della lista
-    else
-    {
-        // elimino il primo nodo e inizializzo head in modo che list_empty(head) mi ritorni true
-        list_del(pos);
-        INIT_LIST_HEAD(head);
-        return container_of(pos, pcb_t, p_list);
+    // caso: il pcb da rimuovere è il primo della lista
+    else{
+        removeProcQ(head);
     }
 }
 
@@ -249,6 +237,7 @@ pcb_t *removeChild(pcb_t *p)
         else
         {
             p->p_child.next = NULL;
+            tmp->p_parent=NULL;
         }
         return tmp;
     }
