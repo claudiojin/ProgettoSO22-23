@@ -25,8 +25,8 @@ void initPcbs()
     {
         tmp->p_list.next = &(pcbFree_table[i].p_list);
         // lista monodirezionale: non mi serve il prev
-        tmp->p_list.prev = NULL;
         tmp = container_of(tmp->p_list.next, pcb_t, p_list);
+        tmp->p_list.prev = NULL;
         tmp->p_list.next = NULL;
     }
 }
@@ -48,20 +48,18 @@ void freePcb(pcb_t *p)
 pcb_t *allocPcb()
 {
     if (pcbFree_h == NULL)
-    {
         return NULL;
-    }
     else
     {
         // rimozione in testa
         pcb_t *p = pcbFree_h;
-        pcbFree_h = pcbFree_h->p_list.next;
+        pcbFree_h = container_of(pcbFree_h->p_list.next, pcb_t, p_list);
         // inizializzo tutti i campi
         p->p_list.next = NULL;
         p->p_list.prev = NULL;
         p->p_parent = NULL;
-        p->p_child.next = NULL;
-        p->p_child.prev = NULL;
+        // p_child è la sentinella della lista dei figli
+        INIT_LIST_HEAD(&(p->p_child));
         p->p_sib.next = NULL;
         p->p_sib.prev = NULL;
         return p;
@@ -98,9 +96,7 @@ void insertProcQ(struct list_head *head, pcb_t *p)
         }
         // caso: inserimento con sentinella
         else
-        {
             list_add_tail(&(p->p_list), head);
-        }
     }
 }
 
@@ -109,14 +105,10 @@ void insertProcQ(struct list_head *head, pcb_t *p)
 pcb_t *headProcQ(struct list_head *head)
 {
     if (list_empty(head))
-    {
         return NULL;
-    }
     else
-    {
         // ritorna il puntatore al primo elemento della lista(head->next), castando a *pcb_t
         return container_of(head->next, pcb_t, p_list);
-    }
 }
 
 // Rimuove il primo elemento dalla coda dei processi puntata da head. Ritorna NULL se la coda è vuota.
@@ -174,17 +166,15 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         return NULL;
     }
     // caso: il pcb da rimuovere è il primo della lista e la lista è di più elementi
-    else 
+    else
         return removeProcQ(head);
 }
 
 // Restituisce TRUE se il PCB puntato da p non ha figli, FALSE altrimenti.
 int emptyChild(pcb_t *p)
 {
-    if (p->p_child.next == NULL)
-    {
+    if (list_empty(&(p->p_child)))
         return true;
-    }
     else
         return false;
 }
@@ -194,50 +184,34 @@ void insertChild(pcb_t *prnt, pcb_t *p)
 {
     if (prnt != NULL && p != NULL)
     {
-        // punta al figlio (testa della lista dei figli)
-        pcb_t *h_child = prnt->p_child.next;
-        // caso: prnt ha dei figli -> inserimento in testa
-        if (h_child != NULL)
-        {
-            // inserisco p in testa
-            p->p_sib.next = h_child;
-            p->p_sib.prev = NULL;
-            h_child->p_sib.prev = p;
-            // h_child non è più il figlio di prnt
-            prnt->p_child.next = p;
-            p->p_parent = prnt;
-        }
-        // caso: prnt non ha figli
-        else
-        {
-            p->p_parent = prnt;
-            prnt->p_child.next = p;
-            p->p_sib.next = NULL;
-            p->p_sib.prev = NULL;
-        }
+        list_add(&p->p_sib, &prnt->p_child);
+        p->p_parent = prnt;
     }
 }
 
 // Rimuove il primo figlio del PCB puntato da p. Se p non ha figli, restituisce NULL
 pcb_t *removeChild(pcb_t *p)
 {
-    if (p == NULL || p->p_child.next == NULL)
+    if (p == NULL || list_empty(&p->p_child))
         return NULL;
     else
     {
-        pcb_t *tmp = p->p_child.next;
+        // punta al primo elemento della lista
+        struct list_head *tmp = p->p_child.next;
         // caso: più figli
-        if (tmp->p_sib.next != NULL)
+        if (!list_is_head(tmp, &p->p_child))
         {
-            p->p_child.next = tmp->p_sib.next;
-            tmp->p_sib.next->prev = NULL;
+            p->p_child.next = tmp->next;
+            tmp->next->prev = &p->p_child;
+            list_del(tmp);
         }
         // caso: un solo figlio
         else
         {
-            p->p_child.next = NULL;
+            list_del(tmp);
+            INIT_LIST_HEAD(&p->p_child);
         }
-        return tmp;
+        return container_of(tmp, pcb_t, p_sib);
     }
 }
 
@@ -252,29 +226,16 @@ pcb_t *outChild(pcb_t *p)
     else
     {
         // tmp punta al fratello sinistro
-        pcb_t *tmp = p->p_sib.prev;
+        struct list_head *tmp = p->p_sib.prev;
         // caso: è il primo fratello
-        if (tmp == NULL)
-        {
+        if (list_is_head(tmp, &p->p_parent->p_child))
             return removeChild(p->p_parent);
-        }
         // caso: non è il primo fratello
         else
         {
-            // è l'ultimo figlio
-            if (p->p_sib.next == NULL)
-            {
-                tmp->p_sib.next = NULL;
-                p->p_sib.prev = NULL;
-            }
-            // caso generale
-            else
-            {
-                tmp->p_sib.next = p->p_sib.next;
-                p->p_sib.next->prev = tmp;
-                p->p_sib.next = NULL;
-                p->p_sib.prev = NULL;
-            }
+            tmp->next = p->p_sib.next;
+            p->p_sib.next->prev = tmp;
+            list_del(&p->p_sib);
             return p;
         }
     }
