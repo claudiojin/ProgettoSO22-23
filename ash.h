@@ -9,7 +9,7 @@
 //  ASH module
 
 int insertBlocked(int *semAdd, pcb_t *p);
-semd_t* line();
+int line(int *addr);
 int counter();
 pcb_t *removeBlocked(int *semAdd);
 pcb_t *outBlocked(pcb_t *p);

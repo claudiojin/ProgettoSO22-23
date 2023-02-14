@@ -21,6 +21,7 @@
 #include "ash.h"
 //#include "ns.h"
 
+
 #define MAXPROC 20
 #define MAXSEM  MAXPROC
 #define MAXNS   MAXPROC
@@ -269,18 +270,15 @@ int main(void) {
         if (insertBlocked(&sem[i], procp[i]))
             adderrbuf("insertBlocked(2): unexpected TRUE   ");
     }
-    if(counter() == 20 && line()) 
-        addokbuf("inseriti i 20 semafori e rimossi dalla pcbfree    \n");
+
     /* check if semaphore descriptors are returned to free list */
-    /*p = removeBlocked(&sem[11]);
+    p = removeBlocked(&sem[11]);
     if (insertBlocked(&sem[11], p))
         adderrbuf("removeBlocked: fails to return to free list   ");
-*/
 
-    if (insertBlocked(&onesem, procp[9]) == FALSE) {
-        //addokbuf("prima di hlist_empty tutto ok    \n");
+    if (insertBlocked(&onesem, procp[9]) == FALSE)
         adderrbuf("insertBlocked: inserted more than MAXPROC   ");
-    }
+
     addokbuf("removeBlocked test started   \n");
     for (i = 10; i < MAXPROC; i++) {
         q = removeBlocked(&sem[i]);
@@ -323,6 +321,7 @@ int main(void) {
 
     addokbuf("headBlocked and outBlocked ok   \n");
     addokbuf("ASH module ok   \n");
+
 /*
     //check Namespaces
     initNamespaces();
