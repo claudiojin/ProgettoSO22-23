@@ -47,7 +47,7 @@ void freePcb(pcb_t *p)
 // inizializza tutti i campi (NULL/0) e restituisce l’elemento rimosso.
 pcb_t *allocPcb()
 {
-    if (pcbFree_h == NULL)
+    if (&pcbFree_h->p_list == NULL)
         return NULL;
     else
     {
