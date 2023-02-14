@@ -26,7 +26,6 @@ int insertBlocked(int *semAdd, pcb_t *p)
 {
     if (semAdd != NULL && p != NULL)
     {
-        l++;
         int key = hash_min((int)semAdd, HASH_BITS(semd_h));
         int empty = hlist_empty(&semd_h[key]);
         // semd associato a semAdd
@@ -34,7 +33,7 @@ int insertBlocked(int *semAdd, pcb_t *p)
         // faccio una sola scansione, il for_each assegna a tmp il primo elemento della lista puntato da hlist_head->first
         // struct hlist_node *tmp = semd_h[hash_min((int)semAdd, HASH_BITS(semd_h))].first;
         // caso: il semd non è presente nella ASH -> alloco un nuovo semd e aggiungo alla ASH
-        if (empty && semdFree_h != NULL)
+        if (empty && &(semdFree_h->s_freelink) != NULL)
         {
             // rimozione in testa dalla lista dei semdFree
             semd_t *tmp = semdFree_h;
@@ -51,7 +50,7 @@ int insertBlocked(int *semAdd, pcb_t *p)
             return false;
         }
         // caso: il semd è nella lista -> aggiungo il pcb alla lista dei bloccati di semd
-        else if (!empty && semdFree_h != NULL)
+        else if (!empty && &(semdFree_h->s_freelink) != NULL)
         {
             semd_t *tmp;
             // semd_t *tmp = container_of(semd_h[hash_min((int)semAdd, HASH_BITS(semd_h))].first, semd_t, s_link);
@@ -72,20 +71,22 @@ int insertBlocked(int *semAdd, pcb_t *p)
 int counter()
 {
     int i = 0;
+    int j = 0;
     int buck = 0;
-    //struct list_head *pos;
+    struct list_head *curr;
     semd_t *pos;
     hash_for_each(semd_h, buck, pos, s_link)
-    //for (pos = &semdFree_h->s_freelink; pos != NULL ; pos = pos->next)
-    {
         i++;
-    }
-    return i;
+    for (curr = &semdFree_h->s_freelink; curr != NULL ; curr = curr->next)
+        j++;
+    return (i == 20 && &semdFree_h->s_freelink == NULL);
 }
 
-semd_t *line()
+int line(int *addr)
 {
-    return semdFree_h;
+    int key = hash_min((int)addr, HASH_BITS(semd_h));
+    int empty = hlist_empty(&semd_h[key]);
+    return (empty && key < 32);
 }
 
 /*
@@ -143,6 +144,7 @@ void initASH()
     semdFree_h->s_freelink.next = NULL;
     semdFree_h->s_freelink.prev = NULL;
     semd_t *tmp = semdFree_h;
+    
     for (int i = 1; i < MAXPROC; i++)
     {
         tmp->s_freelink.next = &(semd_table[i].s_freelink);
