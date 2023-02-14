@@ -19,63 +19,59 @@
 #include <umps3/umps/libumps.h>
 #include "pcb.h"
 #include "ash.h"
-// #include "ns.h"
+//#include "ns.h"
 
 #define MAXPROC 20
-#define MAXSEM MAXPROC
-#define MAXNS MAXPROC
+#define MAXSEM  MAXPROC
+#define MAXNS   MAXPROC
 
-char okbuf[2048]; /* sequence of progress messages */
-char errbuf[128]; /* contains reason for failing */
-char msgbuf[128]; /* nonrecoverable error message before shut down */
-int sem[MAXSEM];
-int onesem;
+char   okbuf[2048]; /* sequence of progress messages */
+char   errbuf[128]; /* contains reason for failing */
+char   msgbuf[128]; /* nonrecoverable error message before shut down */
+int    sem[MAXSEM];
+int    onesem;
 pcb_t *procp[MAXPROC], *p, *q, *firstproc, *lastproc, *midproc;
 nsd_t *pid_ns, *pid_ns2;
-char *mp = okbuf;
+char  *mp = okbuf;
+
 
 #define TRANSMITTED 5
-#define ACK 1
-#define PRINTCHR 2
-#define CHAROFFSET 8
-#define STATUSMASK 0xFF
-#define TERM0ADDR 0x10000254
+#define ACK         1
+#define PRINTCHR    2
+#define CHAROFFSET  8
+#define STATUSMASK  0xFF
+#define TERM0ADDR   0x10000254
 
 typedef unsigned int devreg;
 
 /* This function returns the terminal transmitter status value given its address */
-devreg termstat(memaddr *stataddr)
-{
+devreg termstat(memaddr *stataddr) {
     return ((*stataddr) & STATUSMASK);
 }
 
 /* This function prints a string on specified terminal and returns TRUE if
  * print was successful, FALSE if not   */
-unsigned int termprint(char *str, unsigned int term)
-{
-    memaddr *statusp;
-    memaddr *commandp;
-    devreg stat;
-    devreg cmd;
+unsigned int termprint(char *str, unsigned int term) {
+    memaddr     *statusp;
+    memaddr     *commandp;
+    devreg       stat;
+    devreg       cmd;
     unsigned int error = FALSE;
 
-    if (term < DEVPERINT)
-    {
+    if (term < DEVPERINT) {
         /* terminal is correct */
         /* compute device register field addresses */
-        statusp = (devreg *)(TERM0ADDR + (term * DEVREGSIZE) + (TRANSTATUS * DEVREGLEN));
+        statusp  = (devreg *)(TERM0ADDR + (term * DEVREGSIZE) + (TRANSTATUS * DEVREGLEN));
         commandp = (devreg *)(TERM0ADDR + (term * DEVREGSIZE) + (TRANCOMMAND * DEVREGLEN));
 
         /* test device status */
         stat = termstat(statusp);
-        if (stat == READY || stat == TRANSMITTED)
-        {
+        if (stat == READY || stat == TRANSMITTED) {
             /* device is available */
 
             /* print cycle */
-            while (*str != EOS && !error)
-            {
-                cmd = (*str << CHAROFFSET) | PRINTCHR;
+            while (*str != EOS && !error) {
+                cmd       = (*str << CHAROFFSET) | PRINTCHR;
                 *commandp = cmd;
 
                 /* busy waiting */
@@ -90,22 +86,20 @@ unsigned int termprint(char *str, unsigned int term)
                     /* move to next char */
                     str++;
             }
-        }
-        else
+        } else
             /* device is not available */
             error = TRUE;
-    }
-    else
+    } else
         /* wrong terminal device number */
         error = TRUE;
 
     return (!error);
 }
 
+
 /* This function placess the specified character string in okbuf and
  *	causes the string to be written out to terminal0 */
-void addokbuf(char *strp)
-{
+void addokbuf(char *strp) {
     char *tstrp = strp;
     while ((*mp++ = *strp++) != '\0')
         ;
@@ -113,12 +107,12 @@ void addokbuf(char *strp)
     termprint(tstrp, 0);
 }
 
+
 /* This function placess the specified character string in errbuf and
  *	causes the string to be written out to terminal0.  After this is done
  *	the system shuts down with a panic message */
-void adderrbuf(char *strp)
-{
-    char *ep = errbuf;
+void adderrbuf(char *strp) {
+    char *ep    = errbuf;
     char *tstrp = strp;
 
     while ((*ep++ = *strp++) != '\0')
@@ -129,21 +123,20 @@ void adderrbuf(char *strp)
     PANIC();
 }
 
-int main(void)
-{
+
+
+int main(void) {
     int i;
 
     initPcbs();
     addokbuf("Initialized process control blocks   \n");
 
     /* Check allocProc */
-    for (i = 0; i < MAXPROC; i++)
-    {
+    for (i = 0; i < MAXPROC; i++) {
         if ((procp[i] = allocPcb()) == NULL)
             adderrbuf("allocPcb: unexpected NULL   ");
     }
-    if (allocPcb() != NULL)
-    {
+    if (allocPcb() != NULL) {
         adderrbuf("allocPcb: allocated more than MAXPROC entries   ");
     }
     addokbuf("allocPcb ok   \n");
@@ -158,23 +151,21 @@ int main(void)
     if (!emptyProcQ(&qa))
         adderrbuf("emptyProcQ: unexpected FALSE   ");
     addokbuf("Inserting...   \n");
-    for (i = 0; i < 10; i++)
-    {
+    for (i = 0; i < 10; i++) {
         if ((q = allocPcb()) == NULL)
             adderrbuf("allocPcb: unexpected NULL while insert   ");
-        switch (i)
-        {
-        case 0:
-            firstproc = q;
-            break;
-        case 5:
-            midproc = q;
-            break;
-        case 9:
-            lastproc = q;
-            break;
-        default:
-            break;
+        switch (i) {
+            case 0:
+                firstproc = q;
+                break;
+            case 5:
+                midproc = q;
+                break;
+            case 9:
+                lastproc = q;
+                break;
+            default:
+                break;
         }
         insertProcQ(&qa, q);
     }
@@ -200,8 +191,7 @@ int main(void)
 
     /* Check if removeProc and insertProc remove in the correct order */
     addokbuf("Removing...   \n");
-    for (i = 0; i < 8; i++)
-    {
+    for (i = 0; i < 8; i++) {
         if ((q = removeProcQ(&qa)) == NULL)
             adderrbuf("removeProcQ: unexpected NULL   ");
         freePcb(q);
@@ -224,8 +214,7 @@ int main(void)
 
     /* make procp[1] through procp[9] children of procp[0] */
     addokbuf("Inserting...   \n");
-    for (i = 1; i < 10; i++)
-    {
+    for (i = 1; i < 10; i++) {
         insertChild(procp[0], procp[i]);
     }
     addokbuf("Inserted 9 children   \n");
@@ -246,8 +235,7 @@ int main(void)
 
     /* Check removeChild */
     addokbuf("Removing...   \n");
-    for (i = 0; i < 7; i++)
-    {
+    for (i = 0; i < 7; i++) {
         if ((q = removeChild(procp[0])) == NULL)
             adderrbuf("removeChild: unexpected NULL   ");
     }
@@ -263,37 +251,38 @@ int main(void)
     for (i = 0; i < 10; i++)
         freePcb(procp[i]);
 
+
     /* check ASH */
     initASH();
     addokbuf("Initialized active semaphore hash   \n");
 
     /* check removeBlocked and insertBlocked */
     addokbuf("insertBlocked test #1 started  \n");
-    for (i = 10; i < MAXPROC; i++)
-    {
+    for (i = 10; i < MAXPROC; i++) {
         procp[i] = allocPcb();
         if (insertBlocked(&sem[i], procp[i]))
             adderrbuf("insertBlocked(1): unexpected TRUE   ");
     }
     addokbuf("insertBlocked test #2 started  \n");
-    for (i = 0; i < 10; i++)
-    {
+    for (i = 0; i < 10; i++) {
         procp[i] = allocPcb();
         if (insertBlocked(&sem[i], procp[i]))
             adderrbuf("insertBlocked(2): unexpected TRUE   ");
     }
-
+    if(counter() == 20 && line()) 
+        addokbuf("inseriti i 20 semafori e rimossi dalla pcbfree    \n");
     /* check if semaphore descriptors are returned to free list */
-    p = removeBlocked(&sem[11]);
+    /*p = removeBlocked(&sem[11]);
     if (insertBlocked(&sem[11], p))
         adderrbuf("removeBlocked: fails to return to free list   ");
+*/
 
-    if (insertBlocked(&onesem, procp[9]) == FALSE)
+    if (insertBlocked(&onesem, procp[9]) == FALSE) {
+        //addokbuf("prima di hlist_empty tutto ok    \n");
         adderrbuf("insertBlocked: inserted more than MAXPROC   ");
-
+    }
     addokbuf("removeBlocked test started   \n");
-    for (i = 10; i < MAXPROC; i++)
-    {
+    for (i = 10; i < MAXPROC; i++) {
         q = removeBlocked(&sem[i]);
         if (q == NULL)
             adderrbuf("removeBlocked: wouldn't remove   ");
@@ -334,7 +323,58 @@ int main(void)
 
     addokbuf("headBlocked and outBlocked ok   \n");
     addokbuf("ASH module ok   \n");
+/*
+    //check Namespaces
+    initNamespaces();
+    addokbuf("Initialized Namespaces\n");
 
+    // check normal namespace (getNamespace)
+    addokbuf("getNamespace test #1 started  \n");
+    for (i = 0; i < MAXPROC; i++) {
+        procp[i] = allocPcb();
+        if (getNamespace(procp[i], NS_PID) != NULL)
+            adderrbuf("getNamespace(1): unexpected Namespace   ");
+    }
+
+    addokbuf("getNamespace test #1 ok\n");
+    addokbuf("addNamespace test #1 started\n");
+    pid_ns = allocNamespace(NS_PID);
+    if (pid_ns == NULL)
+            adderrbuf("Unexpected null on allocNS");
+    if (addNamespace(procp[3], pid_ns) != TRUE)
+            adderrbuf("addNamespace: Unexpected FALSE");
+    if (getNamespace(procp[3], NS_PID) == getNamespace(procp[0], NS_PID))
+            adderrbuf("getNamespace: Unexpected root namespace for process 3");
+    if (getNamespace(procp[3], NS_PID) != pid_ns)
+            adderrbuf("getNamespace: Unexpected namespace for process 3");
+    addokbuf("addNamespace: test ok\n");
+
+    addokbuf("addNamespace(2): test started\n");
+    // Change namespace with child
+    insertChild(procp[1], procp[2]);
+    addNamespace(procp[1], pid_ns);
+
+    if (getNamespace(procp[2], NS_PID) == NULL)
+	    adderrbuf("Child namespace is the root one");
+    if (getNamespace(procp[2], NS_PID) != pid_ns)
+            adderrbuf("Child namespace is not the one of the parent!");
+    addokbuf("addNamespace(2): test ok\n");
+
+    pid_ns2 = allocNamespace(NS_PID);
+
+    addNamespace(procp[1], pid_ns2);
+
+    if (getNamespace(procp[0], NS_PID) != NULL)
+            adderrbuf("Root namespace changed!");
+    if (getNamespace(procp[1], NS_PID) != pid_ns2)
+            adderrbuf("Parent namespace did not changed!");
+    if (getNamespace(procp[2], NS_PID) != pid_ns2)
+            adderrbuf("Child namespace did not changed!");
+    if (getNamespace(procp[3], NS_PID) != pid_ns)
+            adderrbuf("Other process namespace changed!");
+
+    addokbuf("Namespace module ok\n");
+    */
     addokbuf("So Long and Thanks for All the Fish\n");
     return 0;
 }

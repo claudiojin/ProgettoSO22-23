@@ -4,18 +4,16 @@ semd_t semd_table[MAXPROC];
 
 // testa della lista dei semd liberi o inutilizzati(come PCBFree_h)
 // ogni semd ha accesso alla lista dei semd liberi semdFree_h tramite il campo s_freelink
-semd_t *semdFree_h;
+static semd_t *semdFree_h;
 
-int i = 0;
+int l = 0;
 
 /* Hash dei semafori attivi (ASH), su un singolo semaforo ci possono essere più PCB in attesa
  * di seguito alcune domande che mi pongo da almeno 3 giorni
- * 1) la dimensione della hash table influenza direttamente il numero di bit della chiave, ma se la chiave(semAdd) che usiamo
- *    è l'indirizzo di un intero, non dovrei creare una hash con chiavi di bit pari a quelli dell' indirizzo di un intero?
- *    Ma visto che il massimo di SEMD su una singola hash è 20, allora non ha senso avere una dimensione così grande solo per
- *    far coincidere n_bit_addres == n_bit_key, mi servirebbe una funzione hash per mappare il tutto
- * 2) capire come dovrebbe essere lo schema della hash table
- * 3) operazione di ricerca, come si fa?
+ * 1) come gestisco le collisioni?
+ *  - inserisco sempre se la semdFree è libera, quindi anche se trovo il semd associato alla chiave e la semdFree != NULL, allora
+ *    aggiungo alla hash un nuovo semaforo nello stesso bucket
+ *  - aggiungo solo se hlist_head->first == NULL, quindi se il bucket associato alla chiave è vuoto
  */
 DEFINE_HASHTABLE(semd_h, 5);
 
@@ -28,55 +26,68 @@ int insertBlocked(int *semAdd, pcb_t *p)
 {
     if (semAdd != NULL && p != NULL)
     {
+        l++;
+        int key = hash_min((int)semAdd, HASH_BITS(semd_h));
+        int empty = hlist_empty(&semd_h[key]);
         // semd associato a semAdd
-        semd_t *tmp; // = NULL;
+        // semd_t *tmp; // = NULL;
         // faccio una sola scansione, il for_each assegna a tmp il primo elemento della lista puntato da hlist_head->first
-        hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd)
+        // struct hlist_node *tmp = semd_h[hash_min((int)semAdd, HASH_BITS(semd_h))].first;
+        // caso: il semd non è presente nella ASH -> alloco un nuovo semd e aggiungo alla ASH
+        if (empty && semdFree_h != NULL)
         {
-            // caso: il semd non è presente nella ASH -> alloco un nuovo semd e aggiungo alla ASH
-            if (tmp == NULL && semdFree_h != NULL)
-            {
-                //i++;
-                // rimozione in testa dalla lista dei semdFree
-                tmp = semdFree_h;
-                semdFree_h = container_of(semdFree_h->s_freelink.next, semd_t, s_freelink);
-                // setto i campi del nuovo semd
-                tmp->s_freelink.next = NULL;
-                tmp->s_key = semAdd;
-                // s_procq è la sentinella della lista di pcb associati al semd
-                mkEmptyProcQ(&(tmp->s_procq));
-                p->p_semAdd = semAdd;
-                insertProcQ(&(tmp->s_procq), p);
-                // inserisce il nodo attuale in testa alla lista dei semd associata alla chiave semAdd
-                hash_add(semd_h, &(tmp->s_link), (int)semAdd);
-                return false;
-            }
-            // caso: il semd non è nella ash ma non ci sono semd disponibili da allocare
-            else if (tmp == NULL && semdFree_h == NULL)
-                return true;
-            // caso: il semd è nella ASH -> aggiungo p alla pcb queue del SEMD
-            else
+            // rimozione in testa dalla lista dei semdFree
+            semd_t *tmp = semdFree_h;
+            semdFree_h = container_of(semdFree_h->s_freelink.next, semd_t, s_freelink);
+            // setto i campi del nuovo semd
+            tmp->s_freelink.next = NULL;
+            tmp->s_key = semAdd;
+            // s_procq è la sentinella della lista di pcb associati al semd
+            mkEmptyProcQ(&(tmp->s_procq));
+            p->p_semAdd = semAdd;
+            insertProcQ(&(tmp->s_procq), p);
+            // inserisce il nodo attuale in testa alla lista dei semd associata alla chiave semAdd
+            hash_add(semd_h, &(tmp->s_link), (int)semAdd);
+            return false;
+        }
+        // caso: il semd è nella lista -> aggiungo il pcb alla lista dei bloccati di semd
+        else if (!empty && semdFree_h != NULL)
+        {
+            semd_t *tmp;
+            // semd_t *tmp = container_of(semd_h[hash_min((int)semAdd, HASH_BITS(semd_h))].first, semd_t, s_link);
+            hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd)
             {
                 p->p_semAdd = semAdd;
                 insertProcQ(&(tmp->s_procq), p);
                 return false;
             }
         }
+        // caso: bisogna aggiungere un nuovo semd ma la semdFree è vuota
+        else
+            return true;
     }
-}
-/*
-int counter() {
-    return i;   
+    return false;
 }
 
-int sem_empty()
+int counter()
 {
-    if (semdFree_h == NULL)
-        return true;
-    else
-        return false;
+    int i = 0;
+    int buck = 0;
+    //struct list_head *pos;
+    semd_t *pos;
+    hash_for_each(semd_h, buck, pos, s_link)
+    //for (pos = &semdFree_h->s_freelink; pos != NULL ; pos = pos->next)
+    {
+        i++;
+    }
+    return i;
 }
-*/
+
+semd_t *line()
+{
+    return semdFree_h;
+}
+
 /*
  *   Ritorna il primo PCB dalla coda dei processi bloccati (s_procq) associata al SEMD della ASH con chiave semAdd.
  *   Se tale descrittore non esiste nella ASH, restituisce NULL. Altrimenti, restituisce l’elemento rimosso. Se la coda
