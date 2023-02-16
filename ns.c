@@ -3,29 +3,33 @@
 per il momento utilizzeremo un solo namespace: PID
 
 Per aggiungere altri namespace:
-    1) Definire il nuovo tipo nel file pandos_types.h, e modificare la variabile:
+    1) Definire il nuovo tipo nel file pandos_types.h, e modificare la variabile NS_TYPE_LAST:
         #define NS_NEW 1
         NS_TYPE_LAST NS_NEW
-    2) Si deve dichiarare l'array del nuovo tipo di namespace qui sotto
+    2) Si deve dichiarare l'array del nuovo tipo di namespace qui sotto(es: new_nsdTable[MAXPROC];)
+    3) Inserire nella funzione initNamespaces una chiamata alla funzione init_nsFree del tipo
+        init_nsFree(new_nsdTable, nsFree_h[newtype], nsList_h[newtype])
 */
 
 // array di namespace tipo PID
 static nsd_t pid_nsdTable[MAXPROC];
 
-// Liste dei NSD di tipo type liberi o inutilizzati.
-static nsd_t *nsFree_h; //[NS_TYPE_MAX];
+// Liste dei namespace liberi o inutilizzati, ogni cella corrisponde alla testa della lista di un tipo.
+static nsd_t *nsFree_h[NS_TYPE_MAX];
 
-// Liste dei namespace di tipo type attivi.
-static nsd_t *nsList_h; //[NS_TYPE_MAX];
+// Liste dei namespace attivi, ogni cella corrisponde alla testa della lista di un tipo.
+static nsd_t *nsList_h[NS_TYPE_MAX];
 
-void init_nsFree(nsd_t table[], nsd_t *free_list, nsd_t *active_list)
+// Inizializza la lista dei namespace associata a un tipo
+void init_nsFree(nsd_t table[], nsd_t **free_list, nsd_t **active_list)
 {
-    active_list = NULL;
-
-    free_list = &table[0];
-    free_list->n_link.next = NULL;
-    free_list->n_link.prev = NULL;
-    nsd_t *tmp = free_list;
+    // inizializzo la testa della lista dei degli nsd attivi
+    *active_list = NULL;
+    // inizializzo la lista degli nsd liberi
+    *free_list = &table[0];
+    (*free_list)->n_link.next = NULL;
+    (*free_list)->n_link.prev = NULL;
+    nsd_t *tmp = *free_list;
 
     for (int i = 1; i < MAXPROC; i++)
     {
@@ -41,21 +45,8 @@ void init_nsFree(nsd_t table[], nsd_t *free_list, nsd_t *active_list)
 void initNamespaces()
 {
     // inizializzo la lista di tipo PID
-    nsList_h = NULL;
-    // init_nsFree(pid_nsdTable, nsFree_h[0], nsList_h[0]);
-    nsFree_h = &pid_nsdTable[0];
-    nsFree_h->n_link.next = NULL;
-    nsFree_h->n_link.prev = NULL;
-    nsd_t *tmp = nsFree_h;
-
-    for (int i = 1; i < MAXPROC; i++)
-    {
-        tmp->n_link.next = &(pid_nsdTable[i].n_link);
-        // lista monodirezionale: non mi serve il prev
-        tmp = container_of(tmp->n_link.next, nsd_t, n_link);
-        tmp->n_link.prev = NULL;
-        tmp->n_link.next = NULL;
-    }
+    init_nsFree(pid_nsdTable, &nsFree_h[0], &nsList_h[0]);
+    // se si vuole aggiungere nuovi namespace, basta chiamare la funzione passandogli la tabella e le liste del nuovo tipo 
 }
 
 // Ritorna il namespace di tipo type associato al processo p (o NULL).
@@ -93,13 +84,24 @@ nsd_t *allocNamespace(int type)
     if (type < 0 || type > NS_TYPE_MAX)
         return NULL;
     // punta alla testa della lista di nsd liberi del tipo corrispondente
-    nsd_t *tmp = nsFree_h; //[type];
+    nsd_t *tmp = nsFree_h[type];
     // tolgo dalla lista nsFree e aggiungo alla lista nsList
-    nsFree_h = container_of(nsFree_h->n_link.next, nsd_t, n_link);
-    tmp->n_link.next = &nsList_h->n_link; // questa istruzione fa esplodere tutto
-    nsList_h = tmp;
+    nsFree_h[type] = container_of(nsFree_h[type]->n_link.next, nsd_t, n_link);
+    tmp->n_link.next = &nsList_h[type]->n_link;
+    nsList_h[type] = tmp;
     return tmp;
 }
 
 // Libera il namespace ns ri-inserendolo nella lista di namespace corretta.
-void freeNamespace(nsd_t *ns) {}
+void freeNamespace(nsd_t *ns)
+{
+    if (ns != NULL)
+    {
+        // rimozione in testa dalla lista dei nsd utilizzati
+        nsd_t *tmp = container_of(&nsList_h[ns->n_type]->n_link, nsd_t, n_link);
+        nsList_h[ns->n_type] = container_of(nsList_h[ns->n_type]->n_link.next, nsd_t, n_link);
+        // inserimento in testa alla lista dei nsd liberi
+        tmp->n_link.next = &nsFree_h[ns->n_type]->n_link;
+        nsFree_h[ns->n_type] = tmp;
+    }
+}

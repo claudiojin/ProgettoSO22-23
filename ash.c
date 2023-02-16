@@ -41,9 +41,7 @@ int insertBlocked(int *semAdd, pcb_t *p)
     // caso: il semd è nella lista -> aggiungo il pcb alla lista dei bloccati di semd
     else if (!empty && &(semdFree_h->s_freelink) != NULL)
     {
-        // semd_t *tmp;
         semd_t *tmp = container_of(semd_h[key].first, semd_t, s_link);
-        // hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd)
         p->p_semAdd = semAdd;
         insertProcQ(&(tmp->s_procq), p);
         return false;
@@ -76,7 +74,7 @@ pcb_t *removeBlocked(int *semAdd)
         {
             // dopo la rimozione controllo se la lista procQ è vuota
             pcb_t *p = removeProcQ(&(tmp->s_procq));
-            if (list_empty(&(tmp->s_procq)))
+            if (emptyProcQ(&(tmp->s_procq)))
             {
                 // rimuovo il semd dalla ASH
                 hash_del(&(tmp->s_link));
@@ -103,11 +101,11 @@ pcb_t *outBlocked(pcb_t *p)
     // vado nel bucket giusto
     hash_for_each_possible(semd_h, tmp, s_link, (int)p->p_semAdd)
     {
-        // caso: la lista di pcb ha un solo elemento -> uso removeBlocked
+        // la lista di pcb ha un solo elemento -> uso removeBlocked
         if (list_is_head(tmp->s_procq.next->next, &tmp->s_procq) && p == container_of(tmp->s_procq.next->next, pcb_t, p_list))
             return removeBlocked(p->p_semAdd);
+        // se ho più di un elemento nella lista -> uso outProcQ
         else
-            // se ho più di un elemento nella lista, uso outProcQ
             return outProcQ(&tmp->s_procq, p);
     }
 }
