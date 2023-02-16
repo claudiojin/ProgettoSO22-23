@@ -1,8 +1,5 @@
 #ifndef ASH_H
 #define ASH_H
-#include "pandos_types.h"
-#include "pandos_const.h"
-#include "types.h"
 #include "hashtable.h"
 #include "pcb.h"
 

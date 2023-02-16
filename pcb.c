@@ -34,7 +34,7 @@ void initPcbs()
 // Inserisce il PCB puntato da p nella lista dei PCB liberi (pcbFree_h)
 void freePcb(pcb_t *p)
 {
-    // controllo che non sia null e poi inserisco in testa
+    // controllo che non sia null, poi inserisco in testa
     if (p != NULL)
     {
         p->p_list.prev = NULL;
@@ -83,17 +83,7 @@ void insertProcQ(struct list_head *head, pcb_t *p)
 {
     if (p != NULL)
     {
-        // caso: coda vuota
-        if (list_empty(head))
-        {
-            head->next = &(p->p_list);
-            head->prev = &(p->p_list);
-            p->p_list.next = head;
-            p->p_list.prev = head;
-        }
-        // caso: inserimento con sentinella
-        else
-            list_add_tail(&(p->p_list), head);
+        list_add_tail(&(p->p_list), head);
     }
 }
 
@@ -101,7 +91,7 @@ void insertProcQ(struct list_head *head, pcb_t *p)
 // Ritorna NULL se la coda non ha elementi.
 pcb_t *headProcQ(struct list_head *head)
 {
-    if (list_empty(head))
+    if (emptyProcQ(head))
         return NULL;
     else
         // ritorna il puntatore al primo elemento della lista(head->next), castando a *pcb_t
@@ -113,14 +103,13 @@ pcb_t *headProcQ(struct list_head *head)
 pcb_t *removeProcQ(struct list_head *head)
 {
     // lista vuota
-    if (list_empty(head))
+    if (emptyProcQ(head))
         return NULL;
-    // punta al primo elemento della lista
+    // primo elemento della lista
     struct list_head *pos = head->next;
     // lista di un singolo elemento
     if (pos->next == head)
     {
-        // container_of(tmp, pcb_t, p_list);
         list_del(pos);
         // reinizializzo la sentinella
         INIT_LIST_HEAD(head);
@@ -141,9 +130,9 @@ pcb_t *removeProcQ(struct list_head *head)
 pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 {
     // coda vuota o il puntatore al pcb è NULL
-    if (list_empty(head) || p == NULL)
+    if (emptyProcQ(head) || p == NULL)
         return NULL;
-    // pos punta al primo elemento della lista
+    // primo elemento della lista
     struct list_head *pos = head->next;
     // caso generale
     if (container_of(pos, pcb_t, p_list) != p)
@@ -171,7 +160,7 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 // Restituisce TRUE se il PCB puntato da p non ha figli, FALSE altrimenti.
 int emptyChild(pcb_t *p)
 {
-    if (list_empty(&(p->p_child)))
+    if (emptyProcQ(&(p->p_child)))
         return true;
     else
         return false;
@@ -190,11 +179,11 @@ void insertChild(pcb_t *prnt, pcb_t *p)
 // Rimuove il primo figlio del PCB puntato da p. Se p non ha figli, restituisce NULL
 pcb_t *removeChild(pcb_t *p)
 {
-    if (p == NULL || list_empty(&p->p_child))
+    if (p == NULL || emptyProcQ(&p->p_child))
         return NULL;
     else
     {
-        // punta al primo elemento della lista
+        // primo elemento della lista
         struct list_head *tmp = p->p_child.next;
         // caso: più figli
         if (!list_is_head(tmp, &p->p_child))
@@ -206,8 +195,8 @@ pcb_t *removeChild(pcb_t *p)
         // caso: un solo figlio
         else
         {
-            p->p_child.next = NULL;
-            tmp->p_parent=NULL;
+            list_del(tmp);
+            INIT_LIST_HEAD(&p->p_child);
         }
         return container_of(tmp, pcb_t, p_sib);
     }
@@ -223,7 +212,7 @@ pcb_t *outChild(pcb_t *p)
         return NULL;
     else
     {
-        // tmp punta al fratello sinistro
+        // fratello sinistro
         struct list_head *tmp = p->p_sib.prev;
         // caso: è il primo fratello
         if (list_is_head(tmp, &p->p_parent->p_child))
