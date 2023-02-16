@@ -1,6 +1,6 @@
 #include "ash.h"
 // array di semd con dimensione massima 20
-semd_t semd_table[MAXPROC];
+static semd_t semd_table[MAXPROC];
 
 // testa della lista dei semd liberi o inutilizzati(come PCBFree_h)
 // ogni semd ha accesso alla lista dei semd liberi semdFree_h tramite il campo s_freelink
@@ -16,42 +16,41 @@ DEFINE_HASHTABLE(semd_h, 5);
  */
 int insertBlocked(int *semAdd, pcb_t *p)
 {
-    if (semAdd != NULL && p != NULL)
+    if (semAdd == NULL || p == NULL)
+        return false;
+    
+    int key = hash_min((int)semAdd, HASH_BITS(semd_h));
+    int empty = hlist_empty(&semd_h[key]);
+    // caso: il semd non è presente nella ASH -> alloco un nuovo semd e aggiungo alla ASH
+    if (empty && &(semdFree_h->s_freelink) != NULL)
     {
-        int key = hash_min((int)semAdd, HASH_BITS(semd_h));
-        int empty = hlist_empty(&semd_h[key]);
-        // caso: il semd non è presente nella ASH -> alloco un nuovo semd e aggiungo alla ASH
-        if (empty && &(semdFree_h->s_freelink) != NULL)
-        {
-            // rimozione in testa dalla lista dei semdFree
-            semd_t *tmp = semdFree_h;
-            semdFree_h = container_of(semdFree_h->s_freelink.next, semd_t, s_freelink);
-            // setto i campi del nuovo semd
-            tmp->s_freelink.next = NULL;
-            tmp->s_key = semAdd;
-            // s_procq è la sentinella della lista di pcb associati al semd
-            mkEmptyProcQ(&(tmp->s_procq));
-            p->p_semAdd = semAdd;
-            insertProcQ(&(tmp->s_procq), p);
-            // inserisce il nodo attuale in testa alla lista dei semd associata alla chiave semAdd
-            hash_add(semd_h, &(tmp->s_link), (int)semAdd);
-            return false;
-        }
-        // caso: il semd è nella lista -> aggiungo il pcb alla lista dei bloccati di semd
-        else if (!empty && &(semdFree_h->s_freelink) != NULL)
-        {
-            // semd_t *tmp;
-            semd_t *tmp = container_of(semd_h[key].first, semd_t, s_link);
-            // hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd)
-            p->p_semAdd = semAdd;
-            insertProcQ(&(tmp->s_procq), p);
-            return false;
-        }
-        // caso: bisogna aggiungere un nuovo semd ma la semdFree è vuota
-        else
-            return true;
+        // rimozione in testa dalla lista dei semdFree
+        semd_t *tmp = semdFree_h;
+        semdFree_h = container_of(semdFree_h->s_freelink.next, semd_t, s_freelink);
+        // setto i campi del nuovo semd
+        tmp->s_freelink.next = NULL;
+        tmp->s_key = semAdd;
+        // s_procq è la sentinella della lista di pcb associati al semd
+        mkEmptyProcQ(&(tmp->s_procq));
+        p->p_semAdd = semAdd;
+        insertProcQ(&(tmp->s_procq), p);
+        // inserisce il nodo attuale in testa alla lista dei semd associata alla chiave semAdd
+        hash_add(semd_h, &(tmp->s_link), (int)semAdd);
+        return false;
     }
-    return false;
+    // caso: il semd è nella lista -> aggiungo il pcb alla lista dei bloccati di semd
+    else if (!empty && &(semdFree_h->s_freelink) != NULL)
+    {
+        // semd_t *tmp;
+        semd_t *tmp = container_of(semd_h[key].first, semd_t, s_link);
+        // hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd)
+        p->p_semAdd = semAdd;
+        insertProcQ(&(tmp->s_procq), p);
+        return false;
+    }
+    // caso: bisogna aggiungere un nuovo semd ma la semdFree è vuota
+    else
+        return true;
 }
 
 /*
@@ -64,11 +63,11 @@ pcb_t *removeBlocked(int *semAdd)
 {
     if (semAdd == NULL)
         return NULL;
+        
     semd_t *tmp;
     // entro nel bucket giusto
     hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd)
     {
-        // visto che sono già nella lista giusta, controllo che ci siano dei semd
         // caso: semd non è nella ASH
         if (tmp == NULL)
             return NULL;
@@ -97,19 +96,19 @@ pcb_t *removeBlocked(int *semAdd)
  */
 pcb_t *outBlocked(pcb_t *p)
 {
-    if (p != NULL && p->p_semAdd != NULL)
+    if (p == NULL || p->p_semAdd == NULL)
+        return NULL;
+    
+    semd_t *tmp;
+    // vado nel bucket giusto
+    hash_for_each_possible(semd_h, tmp, s_link, (int)p->p_semAdd)
     {
-        semd_t *tmp;
-        // vado nel bucket giusto
-        hash_for_each_possible(semd_h, tmp, s_link, (int)p->p_semAdd)
-        {
-            // caso: la lista di pcb ha un solo elemento -> uso removeBlocked
-            if (list_is_head(tmp->s_procq.next->next, &tmp->s_procq) && p == container_of(tmp->s_procq.next->next, pcb_t, p_list))
-                return removeBlocked(p->p_semAdd);
-            else
-                // se ho più di un elemento nella lista, uso outProcQ
-                return outProcQ(&tmp->s_procq, p);
-        }
+        // caso: la lista di pcb ha un solo elemento -> uso removeBlocked
+        if (list_is_head(tmp->s_procq.next->next, &tmp->s_procq) && p == container_of(tmp->s_procq.next->next, pcb_t, p_list))
+            return removeBlocked(p->p_semAdd);
+        else
+            // se ho più di un elemento nella lista, uso outProcQ
+            return outProcQ(&tmp->s_procq, p);
     }
 }
 
@@ -117,14 +116,14 @@ pcb_t *outBlocked(pcb_t *p)
 // semAdd. Ritorna NULL se il SEMD non compare nella ASH oppure se compare ma la sua coda dei processi è vuota.
 pcb_t *headBlocked(int *semAdd)
 {
-    if (semAdd != NULL)
+    if (semAdd == NULL)
+        return NULL;
+
+    semd_t *tmp;
+    // vado nel bucket giusto
+    hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd)
     {
-        semd_t *tmp;
-        // vado nel bucket giusto
-        hash_for_each_possible(semd_h, tmp, s_link, (int)semAdd)
-        {
-            return headProcQ(&tmp->s_procq);
-        }
+        return headProcQ(&tmp->s_procq);
     }
 }
 

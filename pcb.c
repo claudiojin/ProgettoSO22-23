@@ -75,10 +75,7 @@ void mkEmptyProcQ(struct list_head *head)
 // Restituisce TRUE se la lista puntata da head è vuota, FALSE altrimenti
 int emptyProcQ(struct list_head *head)
 {
-    if (list_empty(head))
-        return true;
-    else
-        return false;
+    return list_empty(head);
 }
 
 // Inserisce l’elemento puntato da p nella coda dei processi puntata da head.

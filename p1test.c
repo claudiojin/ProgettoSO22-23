@@ -19,7 +19,7 @@
 #include <umps3/umps/libumps.h>
 #include "pcb.h"
 #include "ash.h"
-//#include "ns.h"
+#include "ns.h"
 
 
 #define MAXPROC 20
@@ -322,12 +322,11 @@ int main(void) {
     addokbuf("headBlocked and outBlocked ok   \n");
     addokbuf("ASH module ok   \n");
 
-/*
-    //check Namespaces
+    /* check Namespaces */
     initNamespaces();
     addokbuf("Initialized Namespaces\n");
 
-    // check normal namespace (getNamespace)
+    /* check normal namespace (getNamespace) */
     addokbuf("getNamespace test #1 started  \n");
     for (i = 0; i < MAXPROC; i++) {
         procp[i] = allocPcb();
@@ -349,7 +348,7 @@ int main(void) {
     addokbuf("addNamespace: test ok\n");
 
     addokbuf("addNamespace(2): test started\n");
-    // Change namespace with child
+    /* Change namespace with child */
     insertChild(procp[1], procp[2]);
     addNamespace(procp[1], pid_ns);
 
@@ -373,7 +372,6 @@ int main(void) {
             adderrbuf("Other process namespace changed!");
 
     addokbuf("Namespace module ok\n");
-    */
     addokbuf("So Long and Thanks for All the Fish\n");
     return 0;
 }
