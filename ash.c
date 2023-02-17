@@ -85,6 +85,7 @@ pcb_t *removeBlocked(int *semAdd)
             return p;
         }
     }
+    return NULL;
 }
 
 /*
@@ -108,6 +109,7 @@ pcb_t *outBlocked(pcb_t *p)
         else
             return outProcQ(&tmp->s_procq, p);
     }
+    return NULL;
 }
 
 // Restituisce (senza rimuovere) il puntatore al PCB che si trova in testa alla coda dei processi associata al SEMD con chiave
@@ -123,6 +125,7 @@ pcb_t *headBlocked(int *semAdd)
     {
         return headProcQ(&tmp->s_procq);
     }
+    return NULL;
 }
 
 // Inizializza la lista dei semdFree in modo da contenere tutti gli elementi della semdTable. Questo metodo viene invocato
