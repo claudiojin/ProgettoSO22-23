@@ -1,6 +1,6 @@
 #include "ns.h"
 /*
-per il momento utilizzeremo un solo namespace: PID
+Per il momento utilizzeremo un solo namespace: PID
 
 Per aggiungere altri namespace:
     1) Definire il nuovo tipo nel file pandos_types.h, e modificare la variabile NS_TYPE_LAST:
@@ -52,6 +52,8 @@ void initNamespaces()
 // Ritorna il namespace di tipo type associato al processo p (o NULL).
 nsd_t *getNamespace(pcb_t *p, int type)
 {
+    if (p == NULL)
+        return NULL;
     if (type >= 0 && type < NS_TYPE_MAX)
         return p->namespaces[type];
     else
