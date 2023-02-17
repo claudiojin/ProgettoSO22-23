@@ -26,6 +26,11 @@ void initNamespaces()
 
 nsd_t *getNamespace(pcb_t *p, int type)
 {
+  if (type != NULL && p != NULL)
+  {
+    
+  }
+  else return NULL;
 }
 
 int addNamespace(pcb_t *p, nsd_t *ns)
