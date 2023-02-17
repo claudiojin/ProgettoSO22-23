@@ -152,9 +152,8 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         return NULL;
     }
     // caso: il pcb da rimuovere è il primo della lista
-    else{
-        removeProcQ(head);
-    }
+    else
+        return removeProcQ(head);
 }
 
 // Restituisce TRUE se il PCB puntato da p non ha figli, FALSE altrimenti.
