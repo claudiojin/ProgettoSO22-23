@@ -1,4 +1,4 @@
-#include "pcb.h"
+#include "../headers/pcb.h"
 
 /** non più di venti processi concorrrenti in panda+
  *
@@ -8,6 +8,7 @@
 
 // array di PCB con dimensione massima di MAX_PROC, è un pool di memoria
 static pcb_t pcbFree_table[MAXPROC];
+
 // testa della lista dei PCB che sono liberi o inutilizzati
 static pcb_t *pcbFree_h;
 

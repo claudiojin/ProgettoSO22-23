@@ -15,4 +15,4 @@ Ogni processo può vedere la sua parte di sistema operativo, ogni parte è detta
 
 # Come compilare
 Basta lanciare make dalla directory del progetto, tutti i file compilati restano nella stessa directory.
-Il file che configura la macchina è già presente nella directory: "FASE1". L'unica modifica che è stata apportata al file p1test.c è l'include degli header pandos.const e pandos.types, compila solamente se vengono inclusi con le "virgolette".
+Il file che configura la macchina è già presente nella directory: "FASE1". L'unica modifica che è stata apportata al file p1test.c è l'include degli header pandos_const.h e pandos_types.h, compila solamente se vengono inclusi con le "virgolette".

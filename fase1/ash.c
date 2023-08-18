@@ -1,4 +1,4 @@
-#include "ash.h"
+#include "../headers/ash.h"
 // array di semd con dimensione massima 20
 static semd_t semd_table[MAXPROC];
 

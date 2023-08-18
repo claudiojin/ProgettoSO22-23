@@ -1,4 +1,4 @@
-#include "ns.h"
+#include "../headers/ns.h"
 /*
 Per il momento utilizzeremo un solo namespace: PID
 
@@ -66,7 +66,7 @@ int addNamespace(pcb_t *p, nsd_t *ns)
     if (p == NULL || ns == NULL)
         return false;
     // l'indice dell'array namespaces corrisponde al tipo, in questa fase del progetto ho solo PID, quindi ns->n_type sarà 0
-    // in futuro potremmo implementare altri namespace, quindi per rendre versatile il codice uso ns->n_type
+    // in futuro potremmo implementare altri namespace, quindi per rendere versatile il codice uso ns->n_type
     p->namespaces[ns->n_type] = ns;
     if (!emptyChild(p))
     {

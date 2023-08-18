@@ -9,11 +9,8 @@
 
 #include <umps3/umps/const.h>
 
-/* Workaround Redefine NULL as 0, in umps3 is defined as -1 */
-#ifdef NULL
-#  undef NULL
-#  define NULL ((void *)0)
-#endif
+#undef NULL
+#define NULL 0
 
 /* Hardware & software constants */
 #define PAGESIZE 4096 /* page size in bytes	*/
@@ -43,36 +40,27 @@
 /* Mikeyg Added constants */
 
 #define MAXPROC 20
+#define DEV_SEMAPHORES 49   /*4 device * 8 sub-device + 8 terminals * 2  + 1 (for pseudo clock support) = 49 */
 
 #define CREATEPROCESS 1
 #define TERMPROCESS   2
 #define PASSEREN      3
 #define VERHOGEN      4
-#define IOWAIT        5
+#define DOIO          5
 #define GETTIME       6
 #define CLOCKWAIT     7
 #define GETSUPPORTPTR 8
-#define TERMINATE     9
-#define GET_TOD       10
-#define WRITEPRINTER  11
-#define WRITETERMINAL 12
-#define READTERMINAL  13
-#define DISK_GET      14
-#define DISK_PUT      15
-#define FLASH_READ    16
-#define FLASH_WRITE   17
-#define DELAY         18
-#define PSEMVIRT      19
-#define VSEMVIRT      20
+#define GETPROCESSID  9
+#define GETCHILDREN   10
 
 
 /* Status register constants */
 #define ALLOFF      0x00000000
 #define USERPON     0x00000008
-#define IEPON       0x00000004
-#define IECON       0x00000001
-#define IMON        0x0000FF00
-#define TEBITON     0x08000000
+#define IEPON       0x00000004  /*previous interrputs mode*/
+#define IECON       0x00000001  /*current interrupts mode*/
+#define IMON        0x0000FF00  /*enable all external interrupts*/
+#define TEBITON     0x08000000  /*enable PLT*/
 #define DISABLEINTS 0xFFFFFFFE
 
 /* Cause register constants */
