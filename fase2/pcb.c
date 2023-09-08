@@ -11,6 +11,8 @@ static pcb_t pcbFree_table[MAXPROC];
 // testa della lista dei PCB che sono liberi o inutilizzati
 static pcb_t *pcbFree_h;
 
+int pid_count = 0;
+
 // Inizializza la lista pcbFree in modo da contenere tutti gli elementi della pcbFree_table.
 // Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.
 void initPcbs()
@@ -60,6 +62,8 @@ pcb_t *allocPcb()
         p->p_parent = NULL;
         p->p_sib.next = NULL;
         p->p_sib.prev = NULL;
+
+        p->p_pid = ++pid_count;
         // p_child è la sentinella della lista dei figli
         INIT_LIST_HEAD(&(p->p_child));
         return p;
