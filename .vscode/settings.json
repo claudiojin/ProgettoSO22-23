@@ -13,7 +13,8 @@
         "libumps.h": "c",
         "pandos_types.h": "c",
         "pandos_const.h": "c",
-        "exceptions.h": "c"
+        "exceptions.h": "c",
+        "initial.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabledIfIncludesResolve"
 }

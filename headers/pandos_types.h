@@ -37,7 +37,7 @@ typedef struct context_t {
 typedef struct support_t {
     int        sup_asid;                        /* process ID                                 */
     state_t    sup_exceptState[2];              /* old state exceptions                       */
-    context_t  sup_exceptContext[2];            /* new contexts for passing up        */
+    context_t  sup_exceptContext[2];            /* new contexts for passing up                */
     pteEntry_t sup_privatePgTbl[USERPGTBLSIZE]; /* user page table                            */
 } support_t;
 

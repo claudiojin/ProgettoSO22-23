@@ -58,10 +58,10 @@ pcb_t *allocPcb()
         p->p_list.next = NULL;
         p->p_list.prev = NULL;
         p->p_parent = NULL;
-        // p_child è la sentinella della lista dei figli
-        INIT_LIST_HEAD(&(p->p_child));
         p->p_sib.next = NULL;
         p->p_sib.prev = NULL;
+        // p_child è la sentinella della lista dei figli
+        INIT_LIST_HEAD(&(p->p_child));
         return p;
     }
 }

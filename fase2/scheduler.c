@@ -1,8 +1,4 @@
 #include "../headers/scheduler.h"
-#include "../headers/pcb.h"
-#include "../headers/initial.h"
-#include <umps3/umps/libumps.h>
-#include "../headers/ash.h"
 
 /**
  * This module implements the Scheduler and the deadlock detector.
@@ -46,6 +42,5 @@ void scheduler()
         setTIMER((cpu_t) TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
         
         LDST(&curr_process->p_s);
-
     }
 }
