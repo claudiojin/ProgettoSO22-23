@@ -205,7 +205,7 @@ static void generateInvalidSystemCallTrap()
 
 static void systemcallHandler()
 {
-    if (SYSTEMCALL_CODE >= 1)
+    if (SYSTEMCALL_CODE < 0)
     {
         passUpOrDieHandler(GENERALEXCEPT);
     }
