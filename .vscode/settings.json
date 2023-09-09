@@ -15,7 +15,8 @@
         "pandos_const.h": "c",
         "exceptions.h": "c",
         "initial.h": "c",
-        "scheduler.h": "c"
+        "scheduler.h": "c",
+        "interrupts.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabledIfIncludesResolve"
 }

@@ -5,6 +5,7 @@
 #include "pandos_const.h"
 #include "exceptions.h"
 #include "scheduler.h"
+#include "interrupts.h"
 #include "pcb.h"
 #include "ash.h"
 #include "ns.h"
@@ -33,6 +34,8 @@ cpu_t timerFlush();
 void updateProcessCPUTime();
 int *getIODeviceSemaphore(memaddr cmdAddr);
 cpu_t getTimeElapsed();
+void resetIntervalTimer();
+void startPLT();
 
 #define BLOCKED_PROCESS_STATE   ((state_t *)BIOSDATAPAGE)
 
