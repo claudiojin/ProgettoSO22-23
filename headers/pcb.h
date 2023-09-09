@@ -27,4 +27,10 @@ void insertChild(pcb_t *prnt, pcb_t *p);
 pcb_t *removeChild(pcb_t *p);
 pcb_t *outChild(pcb_t *p);
 
+// process id handling
+
+pcb_t *getProcessByPid(int pid);
+
+#define NEW_PCB_ID -1
+
 #endif

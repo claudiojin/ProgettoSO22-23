@@ -6,6 +6,9 @@
  * handler (e.g. uTLB_RefillHandler).
  */
 
+#define V(semaddr) semV(semaddr, curr_process, BLOCKED_PROCESS_STATE)
+#define P(semaddr) semP(semaddr, curr_process, BLOCKED_PROCESS_STATE)
+
 static int Create_Process(state_t *statep, support_t *supportp, nsd_t *ns)
 {
 
@@ -35,6 +38,58 @@ static int Create_Process(state_t *statep, support_t *supportp, nsd_t *ns)
     return new_proc->p_pid;
 }
 
+static void _killProcess(pcb_t *process) {
+    outChild(process);
+
+    process_count--;
+    
+    // Gestione semafori
+    if (process->p_semAdd != NULL) {
+        if (isSoftBlocked(process)) {
+            softBlock_count--;
+        }
+        outBlocked(process);
+    }
+
+    // Rimuove il processo dalla sua coda ready (se necessario)
+    outProcQ(&ready_queue, process);
+
+    pcb_t *child;
+    while ((child = removeChild(process)) != NULL) {
+        _killProcess(child);
+    }
+
+    freePcb(process);
+}
+
+static void Terminate_Process(int pid) {
+    // uccido il padre
+    if (pid == 0) {
+        _killProcess(curr_process);
+        scheduler();
+    }
+    else {
+        pcb_t *process_to_kill = getProcessByPid(pid);
+        if (process_to_kill != NULL) {
+            _killProcess(process_to_kill);
+        }
+        
+        // Il pid scelto potrebbe essere un antenato del processo corrente
+        if (curr_process->p_pid != -1) { scheduler(); }
+    }
+}
+
+// chiama una P sul semaforo semaddr
+static void Passeren(int *semaddr) {
+    P(semaddr);
+}
+
+// chiama una V sul semaforo semaddr
+static void Verhogen(int *semaddr) {
+    V(semaddr);
+}
+
+void exceptionHandler() { return; }
 // Effettua un' perazione di IO
 // cmdAddr e' l'indirizzo del dispositivo
 // cmdValues e' un vettore di 2 interi(per i terminali) o 4 (per altri devices)
@@ -97,14 +152,14 @@ int Get_Children(int *children, int size)
 {
 	struct list_head *it_proc;
 	int count = 0;
-	list_for_each(it_proc, &currentProcess->p_child)
+	list_for_each(it_proc, &curr_process->p_child)
 	{
 		pcb_PTR currentPcb = list_entry(it_proc, pcb_t, p_sib);
 		if (getNamespace(currentPcb, NS_PID) == getNamespace(curr_process, NS_PID))
 		{
 			if(count<size)
 			{
-				children[count] = currPcb->p_pid;
+				children[count] = currentPcb->p_pid;
 				count++;
 			}
 		}

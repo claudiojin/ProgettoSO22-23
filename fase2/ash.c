@@ -146,3 +146,41 @@ void initASH()
         tmp->s_freelink.next = NULL;
     }
 }
+
+pcb_t *semP(int *sem, pcb_t *process, state_t *state) {
+    pcb_t *ready_proc = NULL;
+
+    if (*sem == 0) {
+        if (insertBlocked(sem, process)) { PANIC(); } // Non ci sono semafori disponibili
+        setProcessBlocked(process, state);
+        scheduler();
+    }
+    else if (headBlocked(sem) != NULL) {
+        ready_proc = removeBlocked(sem);
+        setProcessReady(ready_proc);
+    }
+    else {
+        *sem = 0;
+    }
+    
+    return ready_proc;
+}
+
+pcb_t *semV(int *sem, pcb_t *process, state_t *state) {
+    pcb_t *ready_proc = NULL;
+    
+    if (*sem == 1) {
+        if (insertBlocked(sem, process)) { PANIC(); } // Non ci sono semafori disponibili
+        setProcessBlocked(process, state);
+        scheduler();
+    }
+    else if (headBlocked(sem) != NULL) {
+        ready_proc = removeBlocked(sem);
+        setProcessReady(ready_proc);
+    }
+    else {
+        *sem = 1;
+    }
+
+    return ready_proc;
+}

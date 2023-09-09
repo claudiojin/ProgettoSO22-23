@@ -1,2 +1,8 @@
+#ifndef EXCEPTIONS_H
+#define EXCEPTIONS_H
+
 #include "initial.h"
-int exceptionHandler();
+
+void exceptionHandler();
+
+#endif

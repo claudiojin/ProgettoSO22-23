@@ -74,6 +74,9 @@ typedef struct pcb_t {
 
     /* Process ID */
     int p_pid;
+
+    /* List of (active) process id */
+    struct list_head pid_list;
 } pcb_t, *pcb_PTR;
 
 

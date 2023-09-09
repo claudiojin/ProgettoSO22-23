@@ -12,6 +12,7 @@ static pcb_t *getNextProcess()
     
     return next_proc;
 }
+
 void scheduler()
 {
     // terminato con successo
@@ -42,5 +43,29 @@ void scheduler()
         setTIMER((cpu_t) TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
         
         LDST(&curr_process->p_s);
+    }
+}
+
+/**
+ * @brief Cambia lo stato del processo a bloccato.
+ * @param p Puntatore al PCB del processo.
+ * @param state Puntatore allo stato da salvare nel processo.
+*/
+void setProcessBlocked(pcb_t *p, state_t *state) {
+    /* Oss: dato che non è prevista la possibilità di bloccare un processo nella ready queue, l'unico che è possibile bloccare è il corrente
+            Quindi non è necessario fare nessun controllo sulle ready queue */
+    
+    curr_process->p_s = *state;
+    updateProcessCPUTime();
+}
+
+
+/**
+ * @brief Cambia lo stato del processo a ready.
+ * @param p Puntatore al PCB del processo.
+*/
+void setProcessReady(pcb_t *p) {
+    if (p->p_pid != -1) {
+        insertProcQ(&ready_queue, p);
     }
 }

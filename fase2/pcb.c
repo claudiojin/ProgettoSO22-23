@@ -11,7 +11,76 @@ static pcb_t pcbFree_table[MAXPROC];
 // testa della lista dei PCB che sono liberi o inutilizzati
 static pcb_t *pcbFree_h;
 
-int pid_count = 0;
+int curr_pid;
+struct list_head pidList_h;
+
+pcb_t *getProcessByPid(int pid)
+{
+    pcb_t *iter;
+
+    list_for_each_entry(iter, &pidList_h, pid_list)
+    {
+        if (iter->p_pid == pid)
+        {
+            return iter;
+        }
+        if (iter->p_pid > pid)
+        {
+            break;
+        }
+    }
+
+    return NULL;
+}
+
+int _generatePid()
+{
+    // Gestione wraparound
+    if (curr_pid <= 0)
+    {
+        curr_pid = 1;
+    }
+
+    if (!list_empty(&pidList_h))
+    {
+        /* Gestione collisioni */
+        int curr_greater_pid = container_of(pidList_h.prev, pcb_t, pid_list)->p_pid; // L'ultimo elemento della lista dei pid è il più grande
+
+        if (curr_greater_pid >= curr_pid)
+        { // Se minore, sicuramente non ci sono collisioni (la lista dei pid è ordinata)
+            while (getProcessByPid(curr_pid) != NULL)
+            {
+                curr_pid++;
+            }
+        }
+    }
+
+    return curr_pid++;
+}
+
+void _addPid(pcb_t *p)
+{
+    int inserted = FALSE;
+    pcb_t *iter;
+
+    // Inserimento per mantenere la lista ordinata in senso crescente per pid
+    // Dato che i pid sono (tendenzialmente) crescenti, si inserisce scorrendo la lista al contrario per maggiore ottimizzazione
+    list_for_each_entry_reverse(iter, &pidList_h, pid_list)
+    {
+        if (p->p_pid >= iter->p_pid)
+        {
+            __list_add(&p->pid_list, &iter->pid_list, iter->pid_list.next);
+            inserted = TRUE;
+            break;
+        }
+    }
+
+    // Nel caso in cui si raggiunga l'inizio della lista senza che avvenga l'inserimento o se la lista è vuota
+    if (inserted == FALSE)
+    {
+        list_add(&p->pid_list, &pidList_h);
+    }
+}
 
 // Inizializza la lista pcbFree in modo da contenere tutti gli elementi della pcbFree_table.
 // Questo metodo deve essere chiamato una volta sola in fase di inizializzazione della struttura dati.
@@ -23,11 +92,15 @@ void initPcbs()
     pcbFree_h->p_list.prev = NULL;
     pcb_t *tmp = pcbFree_h;
 
+    INIT_LIST_HEAD(&pidList_h);
+    curr_pid = 1;
+
     for (int i = 1; i < MAXPROC; i++)
     {
         tmp->p_list.next = &(pcbFree_table[i].p_list);
         // lista monodirezionale: non mi serve il prev
         tmp = container_of(tmp->p_list.next, pcb_t, p_list);
+        tmp->p_pid = NEW_PCB_ID;
         tmp->p_list.prev = NULL;
         tmp->p_list.next = NULL;
     }
@@ -42,7 +115,25 @@ void freePcb(pcb_t *p)
         p->p_list.prev = NULL;
         p->p_list.next = &(pcbFree_h->p_list);
         pcbFree_h = p;
+        list_del(&pidList_h);
+        p->p_pid = NEW_PCB_ID;
     }
+}
+
+void _initPcb(pcb_t *p)
+{
+    // inizializzo tutti i campi
+    p->p_list.next = NULL;
+    p->p_list.prev = NULL;
+    p->p_parent = NULL;
+    p->p_sib.next = NULL;
+    p->p_sib.prev = NULL;
+    // p_child è la sentinella della lista dei figli
+    INIT_LIST_HEAD(&(p->p_child));
+    p->p_semAdd = NULL;
+    p->p_supportStruct = NULL;
+    p->p_time = 0;
+    p->p_s.entry_hi = p->p_pid = _generatePid();
 }
 
 // Restituisce NULL se la pcbFree_h è vuota. Altrimenti rimuove un elemento dalla pcbFree,
@@ -56,16 +147,9 @@ pcb_t *allocPcb()
         // rimozione in testa
         pcb_t *p = pcbFree_h;
         pcbFree_h = container_of(pcbFree_h->p_list.next, pcb_t, p_list);
-        // inizializzo tutti i campi
-        p->p_list.next = NULL;
-        p->p_list.prev = NULL;
-        p->p_parent = NULL;
-        p->p_sib.next = NULL;
-        p->p_sib.prev = NULL;
-
-        p->p_pid = ++pid_count;
-        // p_child è la sentinella della lista dei figli
-        INIT_LIST_HEAD(&(p->p_child));
+        _initPcb(p);
+        // assegno il PID
+        _addPid(p);
         return p;
     }
 }

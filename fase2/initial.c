@@ -69,6 +69,32 @@ void memcpy(void *dest, const void *src, size_t n)
     }
 }
 
+int isSoftBlocked(pcb_t *p) {
+    if (p->p_semAdd == NULL) { return FALSE; }
+
+    // Il semaforo fa riferimento ad un device di I/O
+    if ((p->p_semAdd >= &device_semaphores[0]) && (p->p_semAdd <= &device_semaphores[DEV_SEMAPHORES-1])) { return TRUE; }
+
+    return FALSE;
+}
+
+cpu_t timerFlush() {
+    static cpu_t timer_start = 0;
+    cpu_t curr_time, diff;
+
+    STCK(curr_time);
+    diff = curr_time - timer_start;
+    
+    STCK(timer_start); // Reset tempo di inizio
+
+    return diff;
+}
+
+void updateProcessCPUTime() {
+    curr_process->p_time += timerFlush();
+}
+
+
 int main()
 {
     // populate the process 0 Pass Up Vector, the BIOS uses this to know where to find Kernel functions
@@ -103,14 +129,6 @@ int main()
     process0_state.pc_epc = process0_state.reg_t9 = (memaddr)test;
     process0_state.status = ALLOFF | IEPON | IMON | TEBITON; // bitwise OR on the status register, enabling interrupts, PLT and kernel mode
     // initialize all fields
-    proc->p_child.next = NULL;
-    proc->p_child.prev = NULL;
-    proc->p_parent = NULL;
-    proc->p_sib.next = NULL;
-    proc->p_sib.prev = NULL;
-    proc->p_time = 0;
-    proc->p_semAdd = NULL;
-    proc->p_supportStruct = NULL;
     proc->p_s = process0_state;
     // insert new initialized process in Ready Queue
     // ready_queue is the sentinel of the queue

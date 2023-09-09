@@ -28,8 +28,14 @@ extern pcb_t* curr_process;
 // maintains two semaphores for each terminal device
 extern int device_semaphores[DEV_SEMAPHORES];
 
+int isSoftBlocked(pcb_t *p);
+cpu_t timerFlush();
+void updateProcessCPUTime();
 int *getIODeviceSemaphore(memaddr cmdAddr);
 cpu_t getTimeElapsed();
+
+#define BLOCKED_PROCESS_STATE   ((state_t *)BIOSDATAPAGE)
+
 
 
 #endif
