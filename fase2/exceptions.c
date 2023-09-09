@@ -82,7 +82,7 @@ int Get_Process_Id(int parent)
     }
     else
     {
-        if (curr_process->p_parent == NULL)
+        if (curr_process->p_parent == NULL|| getNamespace(curr_process, NS_PID) != getNamespace(curr_process->p_parent, NS_PID))
         {
             return 0;
         }
@@ -95,4 +95,22 @@ int Get_Process_Id(int parent)
 
 int Get_Children(int *children, int size)
 {
+	struct list_head *it_proc;
+	int count = 0;
+	list_for_each(it_proc, &currentProcess->p_child)
+	{
+		pcb_PTR currentPcb = list_entry(it_proc, pcb_t, p_sib);
+		if (getNamespace(currentPcb, NS_PID) == getNamespace(curr_process, NS_PID))
+		{
+			if(count<size)
+			{
+				children[count] = currPcb->p_pid;
+				count++;
+			}
+		}
+	}
+	return count;
 }
+
+
+
