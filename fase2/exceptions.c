@@ -37,3 +37,41 @@ static int Create_Process(state_t *statep, support_t *supportp, nsd_t *ns)
 
 
 int exceptionHandler() { return 0; }
+
+
+support_t* Get_Support_Data()
+{
+	return curr_process->p_supportStruct;
+
+}
+
+int Get_Process_Id(int parent)
+{
+	if (parent==0)
+	{
+		return curr_process->p_pid;
+	}
+	else
+	{
+		if (curr_process->p_parent==NULL) 
+		{
+			return 0;
+		}
+		else
+		{
+			return curr_process->p_parent->p_pid;
+		}
+	}
+}
+
+int Get_Children(int *children, int size)
+{
+	
+
+
+
+
+
+
+
+}
