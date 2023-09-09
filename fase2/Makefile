@@ -35,7 +35,7 @@ all : kernel.core.umps
 kernel.core.umps : kernel
 	umps3-elf2umps -k $<
 # i nostri moduli oggetto + crtso e libumps
-kernel : p2test.04.o initial.o exceptions.o scheduler.o pcb.o ash.o ns.o crtso.o libumps.o
+kernel : p2test.04.o initial.o interrupts.o exceptions.o scheduler.o pcb.o ash.o ns.o crtso.o libumps.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 	
 clean :

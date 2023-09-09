@@ -71,7 +71,7 @@ static void _deviceInterruptReturn(unsigned int status, unsigned int *command) {
     *command = ACK;
 
     pcb_t *ready_proc = semV(getIODeviceSemaphore((memaddr)command), NULL, NULL);
-    if (IS_ALIVE(ready_proc)) {
+    if (ready_proc->p_pid != -1) {
         softBlock_count--;
         ready_proc->p_s.reg_v0 = status_code;
     }

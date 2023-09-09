@@ -69,6 +69,17 @@ void memcpy(void *dest, const void *src, size_t n)
     }
 }
 
+void startPLT() {
+    setTIMER((cpu_t)TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
+}
+
+void resetIntervalTimer() {
+    // I ritardi vengono calcolati rispetti al tempo 0 del TOD
+    cpu_t curr_time;
+    STCK(curr_time);
+    LDIT(PSECOND - (curr_time % PSECOND));
+}
+
 int isSoftBlocked(pcb_t *p) {
     if (p->p_semAdd == NULL) { return FALSE; }
 
