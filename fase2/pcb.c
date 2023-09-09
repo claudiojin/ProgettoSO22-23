@@ -11,9 +11,12 @@ static pcb_t pcbFree_table[MAXPROC];
 // testa della lista dei PCB che sono liberi o inutilizzati
 static pcb_t *pcbFree_h;
 
-int curr_pid;
+// testa della lista dei pid
 struct list_head pidList_h;
-
+int curr_pid;
+/**
+ * ritorna il processo in base all'id passato
+*/
 pcb_t *getProcessByPid(int pid)
 {
     pcb_t *iter;

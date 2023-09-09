@@ -72,6 +72,8 @@ void memcpy(void *dest, const void *src, size_t n)
 int isSoftBlocked(pcb_t *p) {
     if (p->p_semAdd == NULL) { return FALSE; }
 
+    if (p->p_semAdd == &device_semaphores[DEV_SEMAPHORES]) { return TRUE; }
+
     // Il semaforo fa riferimento ad un device di I/O
     if ((p->p_semAdd >= &device_semaphores[0]) && (p->p_semAdd <= &device_semaphores[DEV_SEMAPHORES-1])) { return TRUE; }
 
