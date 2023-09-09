@@ -50,6 +50,17 @@ int *getIODeviceSemaphore(memaddr cmdAddr)
     return &device_semaphores[index];
 }
 
+cpu_t getTimeElapsed()
+{
+    static cpu_t t_start = 0;
+    cpu_t curr_time, t_elapsed;
+    
+    STCK(curr_time);
+    t_elapsed = curr_time - t_start;
+    STCK(t_start);
+
+    return t_elapsed;
+}
 void memcpy(void *dest, const void *src, size_t n)
 {
     for (size_t i = 0; i < n; i++)

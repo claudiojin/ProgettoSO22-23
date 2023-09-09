@@ -29,5 +29,7 @@ extern pcb_t* curr_process;
 extern int device_semaphores[DEV_SEMAPHORES];
 
 int *getIODeviceSemaphore(memaddr cmdAddr);
+cpu_t getTimeElapsed();
+
 
 #endif

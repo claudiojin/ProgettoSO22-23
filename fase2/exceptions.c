@@ -52,6 +52,12 @@ void DO_IO(int *cmdAddr, int *cmdValues)
     Passeren(semAdrr);
 }
 
+int Get_CPU_Time()
+{
+    curr_process->p_time += getTimeElapsed();
+    return curr_process->p_time;
+}
+
 int exceptionHandler() { return 0; }
 
 support_t *Get_Support_Data()
