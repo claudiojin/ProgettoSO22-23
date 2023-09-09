@@ -52,10 +52,19 @@ void DO_IO(int *cmdAddr, int *cmdValues)
     Passeren(semAdrr);
 }
 
+//restituisce il tempo di esecuzione (in microsecondi) del 
+//processo che l’ha chiamata fino a quel momento
+
 int Get_CPU_Time()
 {
     curr_process->p_time += getTimeElapsed();
     return curr_process->p_time;
+}
+
+void Wait_For_Clock(){
+    softBlock_count++;
+    //l'ultimo e' il Pseudo-clock semaphore, usato per Interval Timer
+    Passeren(device_semaphores[DEV_SEMAPHORES]);
 }
 
 int exceptionHandler() { return 0; }
