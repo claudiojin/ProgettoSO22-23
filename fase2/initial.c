@@ -21,6 +21,35 @@ state_t process0_state;
 extern void test();
 extern void uTLB_RefillHandler();
 
+// restituire il semaforo associato ad un dispositivo IO ricercato per
+// per modificare lo stato del sem
+int *getIODeviceSemaphore(memaddr cmdAddr)
+{
+    int index;
+    memaddr register_addr;
+    memaddr offset = 0; // un terminale ha 4 sotto-registri
+
+    if (cmdAddr >= TERM0ADDR) // terminale 
+    {
+        //i due registri di command distano 8 bit, quindi 
+        //basta verificare il bit 4 
+        if (((cmdAddr >> 3) & 1) == 1) // ricezione
+        {
+            register_addr = cmdAddr - 0x4;
+        }
+        else //trasmissione
+        {
+            register_addr = cmdAddr - 0xc;
+            offset = 8;
+        }
+    }
+    else{ // non terminale
+        register_addr = cmdAddr - 0x4;
+    }
+    index = ((register_addr - DEV_REG_START) / DEV_REG_SIZE) + offset;
+    return &device_semaphores[index];
+}
+
 void memcpy(void *dest, const void *src, size_t n)
 {
     for (size_t i = 0; i < n; i++)

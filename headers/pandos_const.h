@@ -166,6 +166,9 @@
 #define FLASHBACK    0
 #define BACKINGSTORE FLASHBACK
 
+#define BASEADDRESS  0x10000054
+#define TERM0ADDR 0x10000254
+
 #define UPROCMAX 8
 #define POOLSIZE (UPROCMAX * 2)
 /* End of Mikeyg constants */

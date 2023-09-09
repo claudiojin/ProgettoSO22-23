@@ -10,6 +10,7 @@
 #include "ns.h"
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
+#include <umps3/umps/arch.h>
 
 // LEVEL 3 GLOBAL VARIABLES
 
@@ -26,5 +27,7 @@ extern pcb_t* curr_process;
 // to support the Pseudo-clock. Since terminal devices are actually two independent sub-devices, the Nucleus
 // maintains two semaphores for each terminal device
 extern int device_semaphores[DEV_SEMAPHORES];
+
+int *getIODeviceSemaphore(memaddr cmdAddr);
 
 #endif
