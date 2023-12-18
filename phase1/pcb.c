@@ -128,7 +128,7 @@ pcb_t *removeProcQ(struct list_head *head)
     if (pos->next == head)
     {
         list_del(pos);
-        // reinizializzo la sentinella
+        // initialize the sentinel
         INIT_LIST_HEAD(head);
         return container_of(pos, pcb_t, p_list);
     }

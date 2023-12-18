@@ -62,11 +62,12 @@ msg_t *allocMsg()
 }
 
 /*
-    Used to initialize a variable to be head pointer to a message queue; returns a pointer to the head
-    of an empty message queue, i.e. NULL.
+    Used to initialize a variable to be head pointer to a message queue;
+    returns a pointer to the head of an empty message queue.
 */
 void mkEmptyMessageQ(struct list_head *head)
 {
+    INIT_LIST_HEAD(head);
 }
 
 /*
@@ -74,6 +75,7 @@ void mkEmptyMessageQ(struct list_head *head)
 */
 int emptyMessageQ(struct list_head *head)
 {
+    return list_empty(head);
 }
 
 /*
@@ -81,6 +83,7 @@ int emptyMessageQ(struct list_head *head)
 */
 void insertMessage(struct list_head *head, msg_t *m)
 {
+    list_add_tail(&m->m_list, head);
 }
 
 /*
@@ -88,6 +91,7 @@ void insertMessage(struct list_head *head, msg_t *m)
 */
 void pushMessage(struct list_head *head, msg_t *m)
 {
+    list_add(&m->m_list, head);
 }
 
 /*
@@ -99,6 +103,28 @@ void pushMessage(struct list_head *head, msg_t *m)
 */
 msg_t *popMessage(struct list_head *head, pcb_t *p_ptr)
 {
+    if (head == NULL || list_empty(head))
+        return NULL;
+    if (p_ptr == NULL)
+    {
+        struct list_head *first = head->next;
+        list_del(first);
+        return container_of(first, msg_t, m_list);
+    }
+    else
+    {
+        msg_t *iter = NULL;
+        list_for_each_entry(iter, head, m_list)
+        {
+            if (iter->m_sender == p_ptr)
+            {
+                list_del(&iter->m_list);
+                return iter;
+            }
+        }
+        // if no message from p_ptr is found
+        return NULL;
+    }
 }
 
 /*
@@ -107,4 +133,9 @@ msg_t *popMessage(struct list_head *head, pcb_t *p_ptr)
 */
 msg_t *headMessage(struct list_head *head)
 {
+    if (head == NULL || list_empty(head))
+        return NULL;
+    else {
+        return container_of(head->next, msg_t, m_list);
+    }
 }
