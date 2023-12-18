@@ -1,6 +1,6 @@
 /*********************************P1TEST.C*******************************
  *
- *	Test program for the modules ASH and pcbQueues (phase 1).
+ *	Test program for the modules ASL and pcbQueues (phase 1).
  *
  *	Produces progress messages on terminal 0 in addition
  *		to the array ``okbuf[]''
@@ -10,30 +10,21 @@
  *		Aborts as soon as an error is detected.
  *
  *      Modified by Michael Goldweber on May 15, 2004
- *      Modified by Davide Berardi on November 23, 2022
  */
 
-#include "../headers/pandos_const.h"
-#include "../headers/pandos_types.h"
+#include "../headers/const.h"
+#include "../headers/types.h"
 
-#include <umps3/umps/libumps.h>
-#include "../headers/pcb.h"
-#include "../headers/ash.h"
-#include "../headers/ns.h"
-
-
-#define MAXPROC 20
-#define MAXSEM  MAXPROC
-#define MAXNS   MAXPROC
+#include <umps/libumps.h>
+#include "./headers/pcb.h"
+#include "./headers/msg.h"
 
 char   okbuf[2048]; /* sequence of progress messages */
 char   errbuf[128]; /* contains reason for failing */
 char   msgbuf[128]; /* nonrecoverable error message before shut down */
-int    sem[MAXSEM];
-int    onesem;
 pcb_t *procp[MAXPROC], *p, *q, *firstproc, *lastproc, *midproc;
-nsd_t *pid_ns, *pid_ns2;
 char  *mp = okbuf;
+msg_t *msg[MAXMESSAGES], *m, *n, *firstmsg, *lastmsg, *midmsg;
 
 
 #define TRANSMITTED 5
@@ -148,7 +139,8 @@ int main(void) {
     addokbuf("freed 10 entries   \n");
 
     /* create a 10-element process queue */
-    LIST_HEAD(qa);
+    struct list_head qa;
+    mkEmptyProcQ(&qa);
     if (!emptyProcQ(&qa))
         adderrbuf("emptyProcQ: unexpected FALSE   ");
     addokbuf("Inserting...   \n");
@@ -220,6 +212,9 @@ int main(void) {
     }
     addokbuf("Inserted 9 children   \n");
 
+    if (procp[0]->p_child.next != &(procp[1]->p_sib))
+        adderrbuf("insertChild: p_child.next should point to the p_sib of the first child   ");
+
     if (emptyChild(procp[0]))
         adderrbuf("emptyChild: unexpected TRUE   ");
 
@@ -252,126 +247,85 @@ int main(void) {
     for (i = 0; i < 10; i++)
         freePcb(procp[i]);
 
+    initMsgs();
+    addokbuf("Initialized messages   \n");
 
-    /* check ASH */
-    initASH();
-    addokbuf("Initialized active semaphore hash   \n");
-
-    /* check removeBlocked and insertBlocked */
-    addokbuf("insertBlocked test #1 started  \n");
-    for (i = 10; i < MAXPROC; i++) {
-        procp[i] = allocPcb();
-        if (insertBlocked(&sem[i], procp[i]))
-            adderrbuf("insertBlocked(1): unexpected TRUE   ");
+    /* Check allocMsg */
+    for (i = 0; i < MAXMESSAGES; i++) {
+        if ((msg[i] = allocMsg()) == NULL)
+            adderrbuf("allocMsg: unexpected NULL   ");
     }
-    addokbuf("insertBlocked test #2 started  \n");
+    if (allocMsg() != NULL) {
+        adderrbuf("allocMsg: allocated more than MAXMESSAGES entries   ");
+    }
+    addokbuf("allocMsg ok   \n");
+
+    /* return the last 15 entries back to free list */
+    for (i = 5; i < MAXMESSAGES; i++)
+        freeMsg(msg[i]);
+    addokbuf("freed 15 entries   \n");
+
+    struct list_head qm;
+    mkEmptyMessageQ(&qm);
+    if (!emptyMessageQ(&qm))
+        adderrbuf("emptyMessageQ: unexpected FALSE   ");
+    addokbuf("Inserting...   \n");
     for (i = 0; i < 10; i++) {
-        procp[i] = allocPcb();
-        if (insertBlocked(&sem[i], procp[i]))
-            adderrbuf("insertBlocked(2): unexpected TRUE   ");
+        if ((m = allocMsg()) == NULL)
+            adderrbuf("allocMsg: unexpected NULL while insert   ");
+        switch (i) {
+            case 0:
+                firstmsg = m;
+                break;
+            case 5:
+                midmsg = m;
+                break;
+            case 9:
+                lastmsg = m;
+                break;
+            default:
+                break;
+        }
+        insertMessage(&qm, m);
     }
+    addokbuf("inserted 10 elements   \n");
 
-    /* check if semaphore descriptors are returned to free list */
-    p = removeBlocked(&sem[11]);
-    if (insertBlocked(&sem[11], p))
-        adderrbuf("removeBlocked: fails to return to free list   ");
+    if (emptyMessageQ(&qm))
+        adderrbuf("emptyMessageQ: unexpected TRUE");
 
-    if (insertBlocked(&onesem, procp[9]) == FALSE)
-        adderrbuf("insertBlocked: inserted more than MAXPROC   ");
+    /* Check outProc and headProc */
+    if (headMessage(&qm) != firstmsg)
+        adderrbuf("headMessage failed   ");
+    addokbuf("headMessage ok   \n");
+    n = popMessage(&qm, NULL);
+    if (n == NULL || n != firstmsg)
+        adderrbuf("popMessage failed with NULL pcb   ");
+    freeMsg(n);
+    addokbuf("popMessage with NULL pcb ok   \n");
+    n = allocMsg();
+    pushMessage(&qm, n);
+    if (headMessage(&qm) != n)
+        adderrbuf("pushMessage failed   ");
+    addokbuf("pushMessage ok   \n");
+    n = allocMsg();
+    insertMessage(&qm, n);
+    if (container_of(list_prev(&qm), msg_t, m_list) != n)
+        adderrbuf("insertMessage failed  ");
+    addokbuf("insertMessage ok   \n");
+    p = allocPcb();
+    m = allocMsg();
+    m->m_sender = p;
+    insertMessage(&qm, m);
+    n = allocMsg();
+    n->m_sender = p;
+    insertMessage(&qm, n);
+    msg_t* o = popMessage(&qm, p);
+    if (o == NULL || o != m)
+        adderrbuf("popMessage failed with pcb   ");
+    addokbuf("popMessage with pcb ok   \n");
 
-    addokbuf("removeBlocked test started   \n");
-    for (i = 10; i < MAXPROC; i++) {
-        q = removeBlocked(&sem[i]);
-        if (q == NULL)
-            adderrbuf("removeBlocked: wouldn't remove   ");
-        if (q != procp[i])
-            adderrbuf("removeBlocked: removed wrong element   ");
-        if (insertBlocked(&sem[i - 10], q))
-            adderrbuf("insertBlocked(3): unexpected TRUE   ");
-    }
-    if (removeBlocked(&sem[11]) != NULL)
-        adderrbuf("removeBlocked: removed nonexistent blocked proc   ");
-    addokbuf("insertBlocked and removeBlocked ok   \n");
+    addokbuf("messages queue module ok      \n");
 
-    if (headBlocked(&sem[11]) != NULL)
-        adderrbuf("headBlocked: nonNULL for a nonexistent queue   ");
-    if ((q = headBlocked(&sem[9])) == NULL)
-        adderrbuf("headBlocked(1): NULL for an existent queue   ");
-    if (q != procp[9])
-        adderrbuf("headBlocked(1): wrong process returned   ");
-    p = outBlocked(q);
-    if (p != q)
-        adderrbuf("outBlocked(1): couldn't remove from valid queue   ");
-    q = headBlocked(&sem[9]);
-    if (q == NULL)
-        adderrbuf("headBlocked(2): NULL for an existent queue   ");
-    if (q != procp[19])
-        adderrbuf("headBlocked(2): wrong process returned   ");
-    p = outBlocked(q);
-    if (p != q)
-        adderrbuf("outBlocked(2): couldn't remove from valid queue   ");
-    p = outBlocked(q);
-    if (p != NULL)
-        adderrbuf("outBlocked: removed same process twice.");
-    if (headBlocked(&sem[9]) != NULL)
-        adderrbuf("out/headBlocked: unexpected nonempty queue   ");
-
-    for (i = 0; i < MAXPROC; i++)
-        freePcb(procp[i]);
-
-    addokbuf("headBlocked and outBlocked ok   \n");
-    addokbuf("ASH module ok   \n");
-
-    /* check Namespaces */
-    initNamespaces();
-    addokbuf("Initialized Namespaces\n");
-
-    /* check normal namespace (getNamespace) */
-    addokbuf("getNamespace test #1 started  \n");
-    for (i = 0; i < MAXPROC; i++) {
-        procp[i] = allocPcb();
-        if (getNamespace(procp[i], NS_PID) != NULL)
-            adderrbuf("getNamespace(1): unexpected Namespace   ");
-    }
-
-    addokbuf("getNamespace test #1 ok\n");
-    addokbuf("addNamespace test #1 started\n");
-    pid_ns = allocNamespace(NS_PID);
-    if (pid_ns == NULL)
-            adderrbuf("Unexpected null on allocNS");
-    if (addNamespace(procp[3], pid_ns) != TRUE)
-            adderrbuf("addNamespace: Unexpected FALSE");
-    if (getNamespace(procp[3], NS_PID) == getNamespace(procp[0], NS_PID))
-            adderrbuf("getNamespace: Unexpected root namespace for process 3");
-    if (getNamespace(procp[3], NS_PID) != pid_ns)
-            adderrbuf("getNamespace: Unexpected namespace for process 3");
-    addokbuf("addNamespace: test ok\n");
-
-    addokbuf("addNamespace(2): test started\n");
-    /* Change namespace with child */
-    insertChild(procp[1], procp[2]);
-    addNamespace(procp[1], pid_ns);
-
-    if (getNamespace(procp[2], NS_PID) == NULL)
-	    adderrbuf("Child namespace is the root one");
-    if (getNamespace(procp[2], NS_PID) != pid_ns)
-            adderrbuf("Child namespace is not the one of the parent!");
-    addokbuf("addNamespace(2): test ok\n");
-
-    pid_ns2 = allocNamespace(NS_PID);
-
-    addNamespace(procp[1], pid_ns2);
-
-    if (getNamespace(procp[0], NS_PID) != NULL)
-            adderrbuf("Root namespace changed!");
-    if (getNamespace(procp[1], NS_PID) != pid_ns2)
-            adderrbuf("Parent namespace did not changed!");
-    if (getNamespace(procp[2], NS_PID) != pid_ns2)
-            adderrbuf("Child namespace did not changed!");
-    if (getNamespace(procp[3], NS_PID) != pid_ns)
-            adderrbuf("Other process namespace changed!");
-
-    addokbuf("Namespace module ok\n");
-    addokbuf("So Long and Thanks for All the Fish\n");
+    addokbuf("So long, and thanks for all the fish\n");
     return 0;
 }

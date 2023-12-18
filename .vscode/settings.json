@@ -1,22 +1,9 @@
 {
     "files.associations": {
-        "Schema_Sicurezza": "plaintext",
-        "Formule Wireless": "plaintext",
-        "ash.h": "c",
-        "pcb.h": "c",
-        "ns.h": "c",
         "AUTHORS": "text",
         "FASE1": "json",
-        "hashtable.h": "c",
-        "stdio.h": "c",
-        "libc-header-start.h": "c",
-        "libumps.h": "c",
-        "pandos_types.h": "c",
-        "pandos_const.h": "c",
-        "exceptions.h": "c",
-        "initial.h": "c",
-        "scheduler.h": "c",
-        "interrupts.h": "c"
+        "*.h": "c",
+        "*.c": "c"
     },
     "C_Cpp.errorSquiggles": "enabledIfIncludesResolve"
 }

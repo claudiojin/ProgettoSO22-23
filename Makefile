@@ -7,7 +7,7 @@ LD = $(XT_PRG_PREFIX)ld
 # uMPS3-related paths
 
 # Simplistic search for the umps3 installation prefix.
-# If you have umps3 installed on some weird location, set UMPS3_DIR_PREFIX by hand.	
+# If you have umps3 installed on some weird location, set UMPS3_DIR_PREFIX by hand.
 ifneq ($(wildcard /usr/bin/umps3),)
 	UMPS3_DIR_PREFIX = /usr
 else
@@ -18,7 +18,7 @@ UMPS3_DATA_DIR = $(UMPS3_DIR_PREFIX)/share/umps3
 UMPS3_INCLUDE_DIR = $(UMPS3_DIR_PREFIX)/include/umps3
 
 # Compiler options
-CFLAGS_LANG = -ffreestanding
+CFLAGS_LANG = -ffreestanding # -ansi
 CFLAGS_MIPS = -mips1 -mabi=32 -mno-gpopt -G 0 -mno-abicalls -fno-pic -mfp32
 CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS3_INCLUDE_DIR) -Wall -O0
 
@@ -34,13 +34,13 @@ all : kernel.core.umps
 
 kernel.core.umps : kernel
 	umps3-elf2umps -k $<
-# i nostri moduli oggetto + crtso e libumps
-kernel : p2test.04.o initial.o interrupts.o exceptions.o scheduler.o pcb.o ash.o ns.o crtso.o libumps.o
+
+kernel : ./phase1/p1test.o ./phase1/msg.o ./phase1/pcb.o crtso.o libumps.o
 	$(LD) -o $@ $^ $(LDFLAGS)
-	
+
 clean :
-	-rm -f *.o kernel kernel.*.umps
-	
+	-rm -f *.o ./phase1/*.o kernel kernel.*.umps
+
+# Pattern rule for assembly modules
 %.o : %.S
 	$(CC) $(CFLAGS) -c -o $@ $<
-

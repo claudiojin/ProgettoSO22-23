@@ -7,10 +7,11 @@
  *
  ****************************************************************************/
 
-#include <umps3/umps/const.h>
+#include <umps/const.h>
 
-#undef NULL
-#define NULL 0
+/* Number of semaphore's device */
+#define SEMDEVLEN 49
+#define RECVD    5
 
 /* Hardware & software constants */
 #define PAGESIZE 4096 /* page size in bytes	*/
@@ -39,28 +40,33 @@
 
 /* Mikeyg Added constants */
 
-#define MAXPROC 20
-#define DEV_SEMAPHORES 49   /*4 device * 8 sub-device + 8 terminals * 2  + 1 (for pseudo clock support) = 49 */
+#define MAXPROC 40
+#define MAXMESSAGES 40
 
-#define CREATEPROCESS 1
-#define TERMPROCESS   2
-#define PASSEREN      3
-#define VERHOGEN      4
-#define DOIO          5
-#define GETTIME       6
-#define CLOCKWAIT     7
-#define GETSUPPORTPTR 8
-#define GETPROCESSID  9
-#define GETCHILDREN   10
+#define ANYMESSAGE 0
+#define MSGNOGOOD -1
+#define SENDMESSAGE -1
+#define RECEIVEMESSAGE -2
+
+#define CREATEPROCESS -1
+#define TERMPROCESS   -2
+#define PASSEREN      -3
+#define VERHOGEN      -4
+#define DOIO          -5
+#define GETTIME       -6
+#define CLOCKWAIT     -7
+#define GETSUPPORTPTR -8
+#define GETPROCESSID  -9
+#define YIELD         -10
 
 
 /* Status register constants */
 #define ALLOFF      0x00000000
 #define USERPON     0x00000008
-#define IEPON       0x00000004  /*previous interrputs mode*/
-#define IECON       0x00000001  /*current interrupts mode*/
-#define IMON        0x0000FF00  /*enable all external interrupts*/
-#define TEBITON     0x08000000  /*enable PLT*/
+#define IEPON       0x00000004
+#define IECON       0x00000001
+#define IMON        0x0000FF00
+#define TEBITON     0x08000000
 #define DISABLEINTS 0xFFFFFFFE
 
 /* Cause register constants */
@@ -70,7 +76,6 @@
 #define TIMERINTERRUPT 0x00000400
 #define DISKINTERRUPT  0x00000800
 #define FLASHINTERRUPT 0x00001000
-#define NETINTERRUPT   0x00002000
 #define PRINTINTERRUPT 0x00004000
 #define TERMINTERRUPT  0x00008000
 #define IOINTERRUPTS   0
@@ -113,6 +118,8 @@
 
 #define OKCHARTRANS  5
 #define TRANSMITCHAR 2
+#define RECEIVECHAR 	2		// aggiunta comando di ricezione del carattere
+#define PRINTCHR	2		// aggiunta comando di stampa del carattere
 
 #define SEEKTOCYL  2
 #define DISKREAD   3
@@ -162,18 +169,34 @@
 
 #define RAMTOP(T) ((T) = ((*((int *)RAMBASEADDR)) + (*((int *)RAMBASESIZE))))
 
+/*
+ * NOTE: Function coming from a 2012 project
+ 
+* This function takes the CAUSE register (3.3 of pops) and reads the bits corresponding to IP
+ * The "il_no" parameter represents all the possible devices we have. (file /umps3/umps/arch.h line 68)
+ * So the function allows us to go and check for each device which of them is working.
+ * If a device is running CAUSE_IP_GET returns 1, 0 otherwise.
+ * As requested by chapter 3.4 exception 0 we call the interrupt of the first device
+ * that we find "on" / "running" / "of which we get 1 from this function"
+*/
+#define CAUSE_IP_GET(cause, il_no) ((cause) & (1 << ((il_no) + 8))) // performs a bit shift based on the parameters
+
+
+#define NRSEMAPHORES 49         /* Numero semafori devices + pseudo clock */
+#define NSUPPSEM 48 		/* Numero di semafori devices per il livello di supporto */
+
 
 #define DISKBACK     1
 #define FLASHBACK    0
 #define BACKINGSTORE FLASHBACK
 
-#define BASEADDRESS  0x10000054
-#define TERM0ADDR 0x10000254
-
 #define UPROCMAX 8
 #define POOLSIZE (UPROCMAX * 2)
 /* End of Mikeyg constants */
 
-#define TERMINAL_STATUS(status) (status & 0b11111111)
+#define CHARRECV			5		/* Character received*/
+
+/* Inizio indirizzo di device registers */
+#define START_DEVREG		0x10000054
 
 #endif
