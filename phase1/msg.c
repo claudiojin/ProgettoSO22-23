@@ -67,7 +67,8 @@ msg_t *allocMsg()
 */
 void mkEmptyMessageQ(struct list_head *head)
 {
-    INIT_LIST_HEAD(head);
+    if (head != NULL)
+        INIT_LIST_HEAD(head);
 }
 
 /*
@@ -75,7 +76,10 @@ void mkEmptyMessageQ(struct list_head *head)
 */
 int emptyMessageQ(struct list_head *head)
 {
-    return list_empty(head);
+    if (head != NULL)
+        return list_empty(head);
+    else
+        return FALSE;
 }
 
 /*
@@ -83,7 +87,8 @@ int emptyMessageQ(struct list_head *head)
 */
 void insertMessage(struct list_head *head, msg_t *m)
 {
-    list_add_tail(&m->m_list, head);
+    if (head != NULL && m != NULL)
+        list_add_tail(&m->m_list, head);
 }
 
 /*
@@ -91,7 +96,8 @@ void insertMessage(struct list_head *head, msg_t *m)
 */
 void pushMessage(struct list_head *head, msg_t *m)
 {
-    list_add(&m->m_list, head);
+    if (head != NULL && m != NULL)
+        list_add(&m->m_list, head);
 }
 
 /*
@@ -135,7 +141,6 @@ msg_t *headMessage(struct list_head *head)
 {
     if (head == NULL || list_empty(head))
         return NULL;
-    else {
+    else
         return container_of(head->next, msg_t, m_list);
-    }
 }

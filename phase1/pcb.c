@@ -1,5 +1,4 @@
 #include "./headers/pcb.h"
-#include "../klog.c"
 
 static pcb_t pcbTable[MAXPROC];
 LIST_HEAD(pcbFree_h);
@@ -77,7 +76,8 @@ pcb_t *allocPcb()
 */
 void mkEmptyProcQ(struct list_head *head)
 {
-    INIT_LIST_HEAD(head);
+    if (head != NULL)
+        INIT_LIST_HEAD(head);
 }
 
 /*
@@ -85,7 +85,10 @@ void mkEmptyProcQ(struct list_head *head)
 */
 int emptyProcQ(struct list_head *head)
 {
-    return list_empty(head);
+    if (head != NULL)
+        return list_empty(head);
+    else
+        return FALSE;
 }
 
 /*
@@ -135,8 +138,6 @@ pcb_t *removeProcQ(struct list_head *head)
     // multiple elements
     else
     {
-        head->next = pos->next;
-        pos->next->prev = head;
         list_del(pos);
         return container_of(pos, pcb_t, p_list);
     }
@@ -161,8 +162,6 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
         {
             if (container_of(pos, pcb_t, p_list) == p)
             {
-                pos->prev->next = pos->next;
-                pos->next->prev = pos->prev;
                 list_del(pos);
                 return container_of(pos, pcb_t, p_list);
             }
@@ -215,8 +214,6 @@ pcb_t *removeChild(pcb_t *p)
         // multiple children
         if (tmp != &p->p_child)
         {
-            p->p_child.next = tmp->next;
-            tmp->next->prev = &p->p_child;
             list_del(tmp);
         }
         // only child
@@ -248,8 +245,6 @@ pcb_t *outChild(pcb_t *p)
         // general case
         else
         {
-            tmp->next = p->p_sib.next;
-            p->p_sib.next->prev = tmp;
             list_del(&p->p_sib);
             return p;
         }
