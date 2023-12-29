@@ -153,26 +153,22 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
     // usual null check
     if (emptyProcQ(head) || p == NULL)
         return NULL;
-    // first element of the list
-    struct list_head *pos = head->next;
-    // general case
-    if (container_of(pos, pcb_t, p_list) != p)
-    {
-        while (pos != head)
-        {
-            if (container_of(pos, pcb_t, p_list) == p)
-            {
-                list_del(pos);
-                return container_of(pos, pcb_t, p_list);
-            }
-            pos = pos->next;
-        }
-        // if nothing's found return NULL
-        return NULL;
-    }
-    // will go here if the pcb to remove is first in the list
-    else
+    // pcb to remove is first in the list
+    if (container_of(head->next, pcb_t, p_list) == p)
         return removeProcQ(head);
+
+    // general case
+    struct pcb_t *pos = NULL;
+    
+    list_for_each_entry(pos, head, p_list)
+    {
+        if (pos == p)
+        {
+            list_del(&pos->p_list);
+            return pos;
+        }
+    }
+    return NULL;
 }
 
 /*
