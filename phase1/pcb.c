@@ -10,13 +10,31 @@ static int next_pid = 1;
 */
 void initPcbs()
 {
-    INIT_LIST_HEAD(&pcbFree_h);
+    // should be a useless initialization, LIST_HEAD macro has taken care of that
+    // INIT_LIST_HEAD(&pcbFree_h);
 
     // using the "p_list" field of pcb_t to link the PCBs
     for (int i = 0; i < MAXPROC; i++)
     {
         list_add(&pcbTable[i].p_list, &pcbFree_h);
     }
+}
+
+/*
+    returns the pcb pointed to by p ONLY if it is in the list pointed to by head, NULL otherwise
+*/
+pcb_t* contains(pcb_t *p, struct list_head* head)
+{
+    if (p == NULL || head == NULL || list_empty(head))
+        return NULL;
+
+    pcb_t *pos;
+    list_for_each_entry(pos, &pcbFree_h, p_list)
+    {
+        if (pos == p)
+            return pos;
+    }
+    return NULL;
 }
 
 /*
@@ -34,26 +52,26 @@ void freePcb(pcb_t *p)
 /*
     Resets all the fields of the pcb provided
 */
-void resetPcb(pcb_t *p)
+void __resetPcb(pcb_t *p)
 {
     INIT_LIST_HEAD(&(p->p_list));
     p->p_parent = NULL;
     INIT_LIST_HEAD(&(p->p_child));
-    // INIT_LIST_HEAD(&(p->p_sib));
     p->p_sib.next = NULL;
     p->p_sib.prev = NULL;
     // subject to change in phase 2
     p->p_time = 0;
     INIT_LIST_HEAD(&p->msg_inbox);
     p->p_supportStruct = NULL;
-    // subject to change in phase 2
-    p->p_pid = 0;
+    // assign the new process an ID
+    p->p_s.entry_hi = p->p_pid = next_pid;
+    next_pid++;
 }
 
 /*
     Return NULL if the pcbFree list is empty. Otherwise, remove an element from the pcbFree
-    list, provide initial values for ALL of the PCBs fields (i.e. NULL and/or 0) and then return
-    a pointer to the removed element. PCBs get reused, so it is important that no previous
+    list, provide initial values for ALL of the PCBs fields except for the ID (which will be incrementally assigned)
+    and then return a pointer to the removed element. PCBs get reused, so it is important that no previous
     value persist in a PCB when it gets reallocated.
 */
 pcb_t *allocPcb()
@@ -65,8 +83,8 @@ pcb_t *allocPcb()
         // head removal
         pcb_t *p = container_of(pcbFree_h.next, pcb_t, p_list);
         list_del(&p->p_list);
-        // reset all fields
-        resetPcb(p);
+        // reset all fields and assign pid
+        __resetPcb(p);
         return p;
     }
 }

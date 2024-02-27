@@ -10,7 +10,7 @@
 #include <umps/const.h>
 
 /* Number of semaphore's device */
-#define SEMDEVLEN 49
+#define SEMDEVLEN 49    // (4 device * 8 sub-device) + (8 terminals * 2)  + 1 (for pseudo clock support) = 49
 #define RECVD    5
 
 /* Hardware & software constants */
@@ -45,28 +45,25 @@
 
 #define ANYMESSAGE 0
 #define MSGNOGOOD -1
+#define DEST_NOT_EXIST -2
 #define SENDMESSAGE -1
 #define RECEIVEMESSAGE -2
 
-#define CREATEPROCESS -1
-#define TERMPROCESS   -2
-#define PASSEREN      -3
-#define VERHOGEN      -4
-#define DOIO          -5
-#define GETTIME       -6
-#define CLOCKWAIT     -7
-#define GETSUPPORTPTR -8
-#define GETPROCESSID  -9
-#define YIELD         -10
-
+#define CREATEPROCESS 1
+#define TERMPROCESS   2
+#define DOIO          3
+#define GETTIME       4
+#define CLOCKWAIT     5
+#define GETSUPPORTPTR 6
+#define GETPROCESSID  7
 
 /* Status register constants */
-#define ALLOFF      0x00000000
-#define USERPON     0x00000008
-#define IEPON       0x00000004
-#define IECON       0x00000001
-#define IMON        0x0000FF00
-#define TEBITON     0x08000000
+#define ALLOFF      0x00000000  // turns off all status register bits
+#define USERPON     0x00000008  // user mode on
+#define IEPON       0x00000004  // previous interrupts bit enabled
+#define IECON       0x00000001  // current interrupts bit enabled
+#define IMON        0x0000FF00  // enable all external interrupts
+#define TEBITON     0x08000000  // enable PLT
 #define DISABLEINTS 0xFFFFFFFE
 
 /* Cause register constants */
