@@ -6,7 +6,7 @@
  */
 void setBlockedProcess(state_t *state)
 {
-    curr_process->p_s = *state;
+    current_process->p_s = *state;
     updateProcessCPUTime();
 }
 
@@ -22,16 +22,16 @@ void setReadyProcess(pcb_t *p)
 void scheduler()
 {
     // get the first process in the ready queue
-    curr_process = removeProcQ(&ready_queue);
+    current_process = removeProcQ(&ready_queue);
 
     // if the Process Count is 1 and the SSI is the only process in the system, invoke HALT
-    if (process_count == 1 && curr_process->p_pid == 1)
+    if (process_count == 1 && current_process->p_pid == 1)
     {
         HALT();
     }
 
     // ready queue is empty
-    if (curr_process == NULL)
+    if (current_process == NULL)
     {
         if (process_count > 0)
         {
@@ -53,10 +53,10 @@ void scheduler()
     else
     {
         // remember to enable PLT for every running process
-        curr_process->p_s.status = (curr_process->p_s.status) | TEBITON;
+        current_process->p_s.status = (current_process->p_s.status) | TEBITON;
         // load PLT
         setTIMER((cpu_t)TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
         // Load processor state
-        LDST(&curr_process->p_s);
+        LDST(&current_process->p_s);
     }
 }

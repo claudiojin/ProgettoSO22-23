@@ -47,7 +47,7 @@ cpu_t IntervalTOD()
  */
 void updateProcessCPUTime()
 {
-    curr_process->p_time += IntervalTOD();
+    current_process->p_time += IntervalTOD();
 }
 
 /**
@@ -71,8 +71,8 @@ int SendMessage(pcb_t *p, unsigned int payload)
     msg_t message = {
         .m_list.next = NULL,
         .m_list.prev = NULL,
-        .m_sender = curr_process,
-        .m_payload = payload
+        .m_sender = current_process,
+        .m_payload = payload,
     };
 
     // search in the ready queue
@@ -117,9 +117,9 @@ pcb_t *ReceiveMessage(pcb_t *p, unsigned int *payload)
     // extract the first message from the requesting process inbox
     if (p == ANYMESSAGE)
     {
-        if (!list_empty(&curr_process->msg_inbox))
+        if (!list_empty(&current_process->msg_inbox))
         {
-            msg_extracted = headMessage(&curr_process->msg_inbox);
+            msg_extracted = headMessage(&current_process->msg_inbox);
             return msg_extracted->m_sender;
         }
         else
@@ -134,12 +134,12 @@ pcb_t *ReceiveMessage(pcb_t *p, unsigned int *payload)
     {
         if (payload == NULL)
         {
-            msg_extracted = popMessage(&curr_process->msg_inbox, p);
+            msg_extracted = popMessage(&current_process->msg_inbox, p);
             return msg_extracted->m_sender;
         }
         else
         {
-            msg_extracted = popMessage(&curr_process->msg_inbox, p);
+            msg_extracted = popMessage(&current_process->msg_inbox, p);
             if (msg_extracted->m_payload == *payload)
             {
                 return msg_extracted->m_sender;
@@ -154,8 +154,9 @@ pcb_t *ReceiveMessage(pcb_t *p, unsigned int *payload)
 
 /**
  * TODO: implement pass up or die function
-*/
-void passUpOrDie(int index) {
+ */
+void passUpOrDie(int index)
+{
     return;
 }
 

@@ -10,7 +10,7 @@
 int process_count;
 int softBlock_count;
 struct list_head ready_queue;
-pcb_t *curr_process;
+pcb_t *current_process;
 struct list_head blocked_proc[SEMDEVLEN];
 
 // pointer to process 0 pass up vector memory location
@@ -18,6 +18,14 @@ passupvector_t *passupvector;
 
 // function provided by the p2test.c file
 extern void test();
+
+void memcpy(void *dest, const void *src, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        ((char *)dest)[i] = ((char *)src)[i];
+    }
+}
 
 // instantiates the SSI process in the Ready Queue
 void init_ssi()
@@ -75,7 +83,7 @@ int main()
     process_count = 0;
     softBlock_count = 0;
     mkEmptyProcQ(&ready_queue); // ready_queue è la sentinella della coda di PCB
-    curr_process = NULL;
+    current_process = NULL;
     for (int i = 0; i < SEMDEVLEN; i++)
         mkEmptyProcQ(&blocked_proc[i]);
 

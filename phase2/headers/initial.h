@@ -8,8 +8,10 @@
 // #include "./interrupts.h"
 #include "../../phase1/headers/pcb.h"
 #include "../../phase1/headers/msg.h"
-#include <umps3/umps/libumps.h>
 #include <umps3/umps/cp0.h>
+#include <umps3/umps/libumps.h>
+#include <umps3/umps/arch.h>
+#include <stdio.h>
 
 // LEVEL 3 GLOBAL VARIABLES
 
@@ -21,12 +23,15 @@ extern int softBlock_count;
 // Tail pointer to a queue of pcbs that are in the “ready” state
 extern struct list_head ready_queue;
 // pointer to the pcb that is in the “running” state, i.e. the current executing process
-extern pcb_t *curr_process;
+extern pcb_t *current_process;
 
 // The Nucleus maintains one list of blocked PCBs for each external (sub)device
 // (or an array of length SEMDEVLEN - 1 of pcb_t pointers), plus one additional list to support the
 // Pseudo-clock. Since terminal devices are actually two independent sub-devices, the Nucleus maintains
 // two lists/pointers for each terminal device
 extern struct list_head blocked_proc[SEMDEVLEN];
+
+void init_ssi();
+void init_test();
 
 #endif
