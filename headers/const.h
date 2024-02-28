@@ -10,7 +10,7 @@
 #include <umps/const.h>
 
 /* Number of semaphore's device */
-#define SEMDEVLEN 49    // (4 device * 8 sub-device) + (8 terminals * 2)  + 1 (for pseudo clock support) = 49
+#define SEMDEVLEN 49  // (4 device * 8 sub-device) + (8 terminals * 2)  + 1 (for pseudo clock support) = 49
 #define RECVD    5
 
 /* Hardware & software constants */
@@ -37,6 +37,7 @@
 /* Exceptions related constants */
 #define PGFAULTEXCEPT 0
 #define GENERALEXCEPT 1
+#define RI            0x28  // reserved instruction exception (for CP0 cause register)
 
 /* Mikeyg Added constants */
 
@@ -64,10 +65,11 @@
 #define IECON       0x00000001  // current interrupts bit enabled
 #define IMON        0x0000FF00  // enable all external interrupts
 #define TEBITON     0x08000000  // enable PLT
-#define DISABLEINTS 0xFFFFFFFE
+#define DISABLEINTS 0xFFFFFFFE  // disable interrupts
 
 /* Cause register constants */
 #define GETEXECCODE    0x0000007C
+#define DISBALEExcCode 0xFFFFFF83 // disables the Cause.ExcCode field
 #define CLEAREXECCODE  0xFFFFFF00
 #define LOCALTIMERINT  0x00000200
 #define TIMERINTERRUPT 0x00000400
@@ -81,7 +83,7 @@
 #define SYSEXCEPTION   8
 #define BREAKEXCEPTION 9
 #define PRIVINSTR      10
-#define CAUSESHIFT     2
+#define CAUSESHIFT     2 
 
 
 /* EntryLO register (NDVG) constants */
@@ -144,8 +146,9 @@
 #define NOPROC     -1
 #define BYTELENGTH 8
 
-#define PSECOND    100000
-#define TIMESLICE  5000 /* length of proc's time slice	*/
+/* Time in umps3 is always in microseconds */
+#define PSECOND    100000   // 100ms
+#define TIMESLICE  5000     // length of proc's time slice in microseconds (5 ms)
 #define NEVER      0x7FFFFFFF
 #define SECOND     1000000
 #define STATESIZE  0x8C

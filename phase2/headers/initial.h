@@ -3,9 +3,9 @@
 
 #include "../../headers/const.h"
 #include "../../headers/types.h"
+#include "./scheduler.h"
 #include "./exceptions.h"
-// #include "scheduler.h"
-// #include "interrupts.h"
+// #include "./interrupts.h"
 #include "../../phase1/headers/pcb.h"
 #include "../../phase1/headers/msg.h"
 #include <umps3/umps/libumps.h>

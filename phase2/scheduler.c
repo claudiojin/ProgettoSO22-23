@@ -1,5 +1,24 @@
 #include "./headers/scheduler.h"
 
+/**
+ * Sets the current process to a "blocked" state
+ * @param state the state of the processor to load
+ */
+void setBlockedProcess(state_t *state)
+{
+    curr_process->p_s = *state;
+    updateProcessCPUTime();
+}
+
+/**
+ * Sets the pcb pointed to by p to a "ready" state by putting it into the ready queue
+ * @param p the process to awake
+ */
+void setReadyProcess(pcb_t *p)
+{
+    insertProcQ(&ready_queue, p);
+}
+
 void scheduler()
 {
     // get the first process in the ready queue
@@ -36,7 +55,7 @@ void scheduler()
         // remember to enable PLT for every running process
         curr_process->p_s.status = (curr_process->p_s.status) | TEBITON;
         // load PLT
-        setTIMER((cpu_t) TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
+        setTIMER((cpu_t)TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
         // Load processor state
         LDST(&curr_process->p_s);
     }

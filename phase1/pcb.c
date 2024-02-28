@@ -21,15 +21,26 @@ void initPcbs()
 }
 
 /*
-    returns the pcb pointed to by p ONLY if it is in the list pointed to by head, NULL otherwise
+    Returns the pcb pointed to by p ONLY if it is in the list pointed to by list, NULL otherwise
+    If list is NULL, search through the pcbFree_h list
 */
-pcb_t* contains(pcb_t *p, struct list_head* head)
+pcb_t *searchInList(pcb_t *p, struct list_head *list)
 {
-    if (p == NULL || head == NULL || list_empty(head))
+    if (p == NULL)
         return NULL;
 
     pcb_t *pos;
-    list_for_each_entry(pos, &pcbFree_h, p_list)
+    struct list_head head;
+
+    if (list == NULL)
+        head = pcbFree_h;
+    else
+        head = *list;
+
+    if (list_empty(&head))
+        return NULL;
+
+    list_for_each_entry(pos, &head, p_list)
     {
         if (pos == p)
             return pos;

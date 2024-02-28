@@ -20,7 +20,8 @@ passupvector_t *passupvector;
 extern void test();
 
 // instantiates the SSI process in the Ready Queue
-void init_ssi() {
+void init_ssi()
+{
     state_t ssi_state;
     pcb_t *ssi_pcb = allocPcb();
     // bitwise OR on the status register, enabling interrupts and kernel mode
@@ -37,7 +38,8 @@ void init_ssi() {
 }
 
 // instantiates the test process in the Ready Queue
-void init_test() {
+void init_test()
+{
     state_t test_state;
     pcb_t *test_pcb = allocPcb();
     // bitwise OR on the status register, enabling interrupts, kernel mode and PLT
@@ -67,7 +69,7 @@ int main()
 
     // initialize data structures from Phase 1
     initPcbs();
-    initMsg();
+    initMsgs();
 
     // initialize all global variables
     process_count = 0;
@@ -79,6 +81,9 @@ int main()
 
     // initialize Interval Timer device with 100ms
     LDIT(PSECOND);
+    // Formula used: time scale = #clock_ticks in (10^-6)s[1/us], time slice[us]
+    // #clock_ticks = Time[us] * (time scale)[1/us], the value stored in TOD, IT and PLT
+    // is always the number of clock ticks
 
     init_ssi();
     init_test();

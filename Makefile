@@ -34,8 +34,8 @@ all : kernel.core.umps
 
 kernel.core.umps : kernel
 	umps3-elf2umps -k $<
-
-kernel : ./phase1/p1test.o ./phase1/msg.o ./phase1/pcb.o crtso.o libumps.o
+# ssi and interrupts modules left to add
+kernel : ./phase1/msg.o ./phase1/pcb.o ./phase2/initial.o ./phase2/scheduler.o ./phase2/exceptions.o crtso.o libumps.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 clean :
