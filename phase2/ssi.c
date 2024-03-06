@@ -1,11 +1,7 @@
 #include "./headers/ssi.h"
 /**
 * This module implements the System Service Interface.
-*
-*
-*
-*
-**/
+*/
 
 // Helper function to send a message to the SSI process
 void SSIRequest(pcb_t* sender, int service, void* arg){
@@ -13,13 +9,13 @@ void SSIRequest(pcb_t* sender, int service, void* arg){
 	request_msg->m_sender = sender;
 	request_msg->m_service_code = service;
 	request_msg->m_payload = arg;
-	SYSCALL(SENDMESSAGE, (unsigned int)ssi_process,(unsigned int)request_msg,0);
+	SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb,(unsigned int)request_msg,0);
 }
 
 // As the SSI, receive a message from other processes
 msg_t* receive_request(){
 	msg_t* received_msg;
-	SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_process, (unsigned int)&received_msg, 0);
+	SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&received_msg, 0);
 	return received_msg;
 }
 

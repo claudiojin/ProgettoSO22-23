@@ -4,14 +4,13 @@
 #include "./headers/exceptions.h"
 #include "./headers/scheduler.h"
 #include "../../phase1/headers/msg.h"
+
 /**
  * This module implements the System Service Interface.
  */
 
-
-
 // Global variable to represent SSI process
-extern pcb_t* ssi_process;
+extern pcb_t* ssi_pcb;
 
 // Standard procedure to be called by processes to make service requests
 void SSIRequest(pcb_t* sender, int service, void* arg);
@@ -40,5 +39,8 @@ support_t* get_support_data(pcb_t* sender);
 
 // GetProcessID service
 int get_process_id(pcb_t* sender, int arg);
+
+//SSI basic server algorithm (implements the RPC)
+void SSI_server();
 
 #endif 

@@ -5,7 +5,7 @@
 #include "../../headers/types.h"
 #include "./scheduler.h"
 #include "./exceptions.h"
-// #include "./ssi.h"
+#include "./ssi.h"
 // #include "./interrupts.h"
 #include "../../phase1/headers/pcb.h"
 #include "../../phase1/headers/msg.h"
