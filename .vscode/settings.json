@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "AUTHORS": "text",
-        "FASE1": "json",
-        "*.h": "c",
-        "*.c": "c"
-    },
-    "C_Cpp.errorSquiggles": "enabledIfIncludesResolve"
-}
