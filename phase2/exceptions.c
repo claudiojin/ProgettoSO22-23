@@ -23,35 +23,8 @@ void uTLB_RefillHandler()
 }
 
 /**
- * By storing off the TOD clock’s value at both the start and end of an interval, one can compute
- * the duration of that interval. The interval in question represents the time elapsed from the exception
- * raise to the blocking of the process requesting a blocking syscall
- * @returns the interval duration
- */
-cpu_t IntervalTOD()
-{
-    static cpu_t timer_start = 0;
-    cpu_t curr_time, diff;
-
-    STCK(curr_time);
-    diff = curr_time - timer_start;
-
-    STCK(timer_start); // update the start of the interval to current time for future uses
-
-    return diff;
-}
-
-/**
- * Adds to current process cpu time the interval from the exception raise to the current time, using
- * the Time Of Day clock
- */
-void updateProcessCPUTime()
-{
-    current_process->p_time += IntervalTOD();
-}
-
-/**
- * @param p target process to send the message to
+ * This system call causes the transmission of a message to a specified process. This is an asynchronous operation
+ * @param p destination process
  * @param payload payload of the message to send
  * @returns 0 when successful, -2 when the pcb is not available, error is -1
  */
@@ -81,20 +54,12 @@ int SendMessage(pcb_t *p, unsigned int payload)
         pushMessage(&p->msg_inbox, &message);
         return 0;
     }
-    // search in the blocked_proc lists
-    else
+    // search in the frozen list
+    if (searchInList(p, &frozen_list))
     {
-        pcb_t *found_pcb = NULL;
-        for (int i = 0; i < SEMDEVLEN; i++)
-        {
-            found_pcb = searchInList(p, &blocked_proc[i]);
-            if (found_pcb != NULL)
-            {
-                setReadyProcess(found_pcb);
-                pushMessage(&p->msg_inbox, &message);
-                return 0;
-            }
-        }
+        awakeProcess(p);
+        pushMessage(&p->msg_inbox, &message);
+        return 0;
     }
     // if we could not find the receiver for some reason return the default error
     return MSGNOGOOD;
@@ -119,14 +84,13 @@ pcb_t *ReceiveMessage(pcb_t *p, unsigned int *payload)
     {
         if (!list_empty(&current_process->msg_inbox))
         {
-            msg_extracted = headMessage(&current_process->msg_inbox);
+            msg_extracted = popMessage(&current_process->msg_inbox, NULL);
             return msg_extracted->m_sender;
         }
         else
         {
             // wait for any message
-            setBlockedProcess(PROCSTATE);
-            scheduler();
+            freezeProcess(PROCSTATE);
         }
     }
     // search for the message with the provided characteristics
@@ -146,18 +110,34 @@ pcb_t *ReceiveMessage(pcb_t *p, unsigned int *payload)
             }
         }
         // wait for the specified message
-        setBlockedProcess(PROCSTATE);
-        scheduler();
+        freezeProcess(PROCSTATE);
     }
     return msg_extracted->m_sender;
 }
 
 /**
- * TODO: implement pass up or die function
+ * For all other exceptions (e.g. SYSCALL exceptions numbered 1 and above, Program Trap and TLB exceptions)
+ * the Nucleus will take one of two actions depending on whether the the Current Process was provided
+ * a non-NULL value for its Support Structure pointer when it was created: pass the handling of the exception
+ * the suppport level(if it's non-null) or behave as a TerminateProcess
+ * @param index Mnemonic code to differentiate exceptions from TLB exceptions and general exceptions
  */
 void passUpOrDie(int index)
 {
-    return;
+    if (current_process->p_supportStruct == NULL)
+    {
+        killProcess();
+        scheduler();
+    }
+    else
+    {
+        // Copy the saved exception state from the BIOS Data Page to the correct sup_exceptState field
+        // of the Current Process
+        current_process->p_supportStruct->sup_exceptState[index] = *PROCSTATE;
+        // Perform a Load Context using the fields from the correct sup_exceptContext field of the Current Process
+        context_t ctx = current_process->p_supportStruct->sup_exceptContext[index];
+        LDCXT(ctx.stackPtr, ctx.status, ctx.pc);
+    }
 }
 
 /**
@@ -165,9 +145,10 @@ void passUpOrDie(int index)
  * This is done by setting Cause.ExcCode in the stored exception state to RI
  * (Reserved Instruction), and calling one’s Program Trap exception handler
  */
-void __syscallProgramTrap()
+void syscallProgramTrap()
 {
     PROCSTATE->cause = (PROCSTATE->cause & DISBALEExcCode) | RI;
+    passUpOrDie(GENERALEXCEPT);
 }
 
 /**
@@ -180,7 +161,7 @@ void systemCallHandler()
     // an interrupted execution stream is restarted, the stack is popped.
     if ((PROCSTATE->status & USERPON) != 0)
     {
-        __syscallProgramTrap();
+        syscallProgramTrap();
     }
 
     // A SYSCALL exception numbered 1 and above occurs when the Current Process executes the SYSCALL
@@ -206,7 +187,7 @@ void systemCallHandler()
         break;
     default:
         // invalid system call code
-        __syscallProgramTrap();
+        syscallProgramTrap();
         break;
     }
 

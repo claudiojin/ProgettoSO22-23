@@ -5,6 +5,7 @@
 #include "../../headers/types.h"
 #include "./scheduler.h"
 #include "./exceptions.h"
+// #include "./ssi.h"
 // #include "./interrupts.h"
 #include "../../phase1/headers/pcb.h"
 #include "../../phase1/headers/msg.h"
@@ -24,12 +25,13 @@ extern int softBlock_count;
 extern struct list_head ready_queue;
 // pointer to the pcb that is in the “running” state, i.e. the current executing process
 extern pcb_t *current_process;
-
 // The Nucleus maintains one list of blocked PCBs for each external (sub)device
 // (or an array of length SEMDEVLEN - 1 of pcb_t pointers), plus one additional list to support the
 // Pseudo-clock. Since terminal devices are actually two independent sub-devices, the Nucleus maintains
 // two lists/pointers for each terminal device
 extern struct list_head blocked_proc[SEMDEVLEN];
+// list of processes waiting for a message
+extern struct list_head frozen_list;
 
 void init_ssi();
 void init_test();

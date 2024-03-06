@@ -12,6 +12,7 @@ int softBlock_count;
 struct list_head ready_queue;
 pcb_t *current_process;
 struct list_head blocked_proc[SEMDEVLEN];
+struct list_head frozen_list;
 
 // pointer to process 0 pass up vector memory location
 passupvector_t *passupvector;
@@ -37,7 +38,7 @@ void init_ssi()
     // stack pointer set to ramtop
     RAMTOP(ssi_state.reg_sp);
     // PC set to SSI function address, also update t9 register
-    ssi_state.pc_epc = ssi_state.reg_t9 = (memaddr)SSI_function_entry_point;
+    ssi_state.pc_epc = ssi_state.reg_t9 = (memaddr)SSI_server;
     // initialize status field
     ssi_pcb->p_s = ssi_state;
     // insert new initialized process in Ready Queue
@@ -86,6 +87,7 @@ int main()
     current_process = NULL;
     for (int i = 0; i < SEMDEVLEN; i++)
         mkEmptyProcQ(&blocked_proc[i]);
+    mkEmptyProcQ(&frozen_list);
 
     // initialize Interval Timer device with 100ms
     LDIT(PSECOND);

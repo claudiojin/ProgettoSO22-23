@@ -1,22 +1,52 @@
 #include "./headers/scheduler.h"
 
 /**
- * Sets the current process to a "blocked" state
+ * Sets the current process to a frozen state and calls the scheduler
  * @param state the state of the processor to load
  */
-void setBlockedProcess(state_t *state)
+void freezeProcess(state_t *state)
 {
+    insertProcQ(&frozen_list, current_process);
     current_process->p_s = *state;
     updateProcessCPUTime();
+    scheduler();
 }
 
 /**
- * Sets the pcb pointed to by p to a "ready" state by putting it into the ready queue
+ * awakes pcb pointed to by p by putting it into the ready queue
  * @param p the process to awake
  */
-void setReadyProcess(pcb_t *p)
+void awakeProcess(pcb_t *p)
 {
+    outProcQ(&frozen_list, p);
     insertProcQ(&ready_queue, p);
+}
+
+/**
+ * By storing off the TOD clock’s value at both the start and end of an interval, one can compute
+ * the duration of that interval. The interval in question represents the current process time
+ * @returns the interval duration
+ */
+cpu_t IntervalTOD()
+{
+    // TOD clock starts from 0 and counts up
+    static cpu_t timer_start = 0;
+    cpu_t curr_time, diff;
+
+    STCK(curr_time);
+    diff = curr_time - timer_start;
+
+    STCK(timer_start); // update the start of the interval to current time for future uses
+
+    return diff;
+}
+
+/**
+ * Updates the current process p_time
+ */
+void updateProcessCPUTime()
+{
+    current_process->p_time += IntervalTOD();
 }
 
 void scheduler()

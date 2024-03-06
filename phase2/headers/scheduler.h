@@ -9,8 +9,10 @@ nity to execute. The Nucleus should implement a simple preemptive round-robin sc
 with a time slice value of 5 milliseconds (constant TIMESLICE)
 */
 
+void freezeProcess(state_t *state);
+void awakeProcess(pcb_t *p);
+cpu_t IntervalTOD();
+void updateProcessCPUTime();
 void scheduler();
-void setBlockedProcess(state_t *state);
-void setReadyProcess(pcb_t *p);
 
 #endif

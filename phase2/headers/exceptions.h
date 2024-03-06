@@ -5,7 +5,5 @@
 
 void uTLB_RefillHandler();
 void exceptionHandler();
-cpu_t IntervalTOD();
-void updateProcessCPUTime();
 
 #endif
