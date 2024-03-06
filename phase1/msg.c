@@ -38,6 +38,7 @@ void resetMsg(msg_t *m)
     INIT_LIST_HEAD(&m->m_list);
     m->m_payload = 0;
     m->m_sender = NULL;
+    m->m_service_code = -1; // default case, terminated if caught by ssi
 }
 
 /*
