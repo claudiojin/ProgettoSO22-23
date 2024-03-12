@@ -25,10 +25,10 @@ void uTLB_RefillHandler()
 /**
  * This system call causes the transmission of a message to a specified process. This is an asynchronous operation
  * @param p destination process
- * @param payload payload of the message to send
- * @returns 0 when successful, -2 when the pcb is not available, error is -1
+ * @param payload payload of the message to send: either a char*, an ssi_payload_t* or 0
+ * @returns 0 when successful, -2 when the pcb is not available, default error is -1
  */
-int SendMessage(pcb_t *p, unsigned int payload)
+int SendMessage(pcb_t *p, unsigned int *payload)
 {
     if (p == NULL)
     {
@@ -45,7 +45,7 @@ int SendMessage(pcb_t *p, unsigned int payload)
         .m_list.next = NULL,
         .m_list.prev = NULL,
         .m_sender = current_process,
-        .m_payload = payload,
+        .m_payload = *payload,
     };
 
     // search in the ready queue
@@ -70,7 +70,8 @@ int SendMessage(pcb_t *p, unsigned int payload)
  * This is a synchronous operation since the requesting process will be frozen until a message matching
  * the required characteristics doesn’t arrive.
  * @param p sender's PCB
- * @param payload pointer to the expected message payload
+ * @param payload the expected message payload: either of type char*, an unsigned int*(devregtr), int*, cpu_t*,
+ * pcb_t*, support_t*
  * @returns the process which sent the message extracted
  */
 pcb_t *ReceiveMessage(pcb_t *p, unsigned int *payload)
@@ -93,14 +94,16 @@ pcb_t *ReceiveMessage(pcb_t *p, unsigned int *payload)
             freezeProcess(PROCSTATE);
         }
     }
-    // search for the message with the provided characteristics
+    // search for the message
     else
     {
-        if (payload == NULL)
+        // the payload should be ignored
+        if (payload == 0)
         {
             msg_extracted = popMessage(&current_process->msg_inbox, p);
             return msg_extracted->m_sender;
         }
+        // match the provided characteristics
         else
         {
             msg_extracted = popMessage(&current_process->msg_inbox, p);
@@ -180,7 +183,7 @@ void systemCallHandler()
     switch (SYSTEMCALL_CODE)
     {
     case SENDMESSAGE:
-        PROCSTATE->reg_v0 = (unsigned int)SendMessage((pcb_t *)PROCSTATE->reg_a1, (unsigned int)PROCSTATE->reg_a2);
+        PROCSTATE->reg_v0 = (unsigned int)SendMessage((pcb_t *)PROCSTATE->reg_a1, (unsigned int *)PROCSTATE->reg_a2);
         break;
     case RECEIVEMESSAGE:
         PROCSTATE->reg_v0 = (unsigned int)ReceiveMessage((pcb_t *)PROCSTATE->reg_a1, (unsigned int *)PROCSTATE->reg_a2);

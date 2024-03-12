@@ -13,6 +13,7 @@ struct list_head ready_queue;
 pcb_t *current_process;
 struct list_head blocked_proc[SEMDEVLEN];
 struct list_head frozen_list;
+pcb_t *ssi_pcb;
 
 // pointer to process 0 pass up vector memory location
 passupvector_t *passupvector;
@@ -32,7 +33,7 @@ void memcpy(void *dest, const void *src, size_t n)
 void init_ssi()
 {
     state_t ssi_state;
-    pcb_t *ssi_pcb = allocPcb();
+    ssi_pcb = allocPcb();
     // bitwise OR on the status register, enabling interrupts and kernel mode
     ssi_state.status = ALLOFF | IEPON | IMON;
     // stack pointer set to ramtop
@@ -73,7 +74,7 @@ int main()
     passupvector = (passupvector_t *)PASSUPVECTOR; // process 0 pass up vector always stays at his memory location PASSUPVECTOR
     passupvector->tlb_refill_handler = (memaddr)uTLB_RefillHandler;
     passupvector->tlb_refill_stackPtr = (memaddr)KERNELSTACK;
-    passupvector->exception_handler = (memaddr)exceptionHandler; // our exception handling function TODO: exceptions.c
+    passupvector->exception_handler = (memaddr)exceptionHandler; // our exception handling function
     passupvector->exception_stackPtr = (memaddr)KERNELSTACK;
 
     // initialize data structures from Phase 1

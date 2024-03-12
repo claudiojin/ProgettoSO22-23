@@ -7,8 +7,8 @@
 void SSIRequest(pcb_t* sender, int service, void* arg){
 	msg_t* request_msg = allocMsg();
 	request_msg->m_sender = sender;
-	request_msg->m_service_code = service;
-	request_msg->m_payload = arg;
+	// request_msg->m_service_code = service;
+	request_msg->m_payload = (unsigned int)arg;
 	SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb,(unsigned int)request_msg,0);
 }
 
@@ -28,7 +28,7 @@ void send_response(pcb_t* sender, void* response){
 // create a new process, progeny of the sender
 void create_process_service(pcb_t* sender, ssi_create_process_t* args) {
 	// Allocate a new PCB
-	pcb_t* new_process = allocate_pcb();
+	pcb_t* new_process = allocPcb();
 
 	// Initialize PCB fields
 	new_process->p_s = *(args->state);
@@ -93,18 +93,19 @@ int get_process_id(pcb_t* sender, int arg){
 	}
 }
 
-//SSI basic server algorithm (implements the RPC)
+// SSI basic server algorithm (implements the RPC)
 void SSI_server() {
     // Loop indefinitely to handle requests
     while (TRUE) {
         
 		// Receive a request from the SSI process inbox
         msg_t* request_msg = receive_request();
-
+        ssi_payload_PTR payload = (ssi_payload_PTR)request_msg->m_payload;
+        int service_code = payload->service_code;
         // Satisfy the received request based on the service code
-        switch (request_msg->m_service_code) {
+        switch (service_code) {
             case CREATEPROCESS: {
-                create_process_service(request_msg->m_sender, (ssi_create_process_t*)request_msg->m_payload);
+                create_process_service(request_msg->m_sender, payload->arg);
                 break;
             }
             case TERMPROCESS: {
@@ -140,9 +141,9 @@ void SSI_server() {
                 break;
             }
             case GETPROCESSID: {
-                int arg = (int)request_msg->m_payload;
+                // int arg = (int)request_msg->m_payload;
                 // Get the pid based on the argument
-                int process_id = get_process_id(request_msg->m_sender, arg);
+                int process_id = get_process_id(request_msg->m_sender, (int)payload->arg);
                 // Send back pid as a response
                 send_response(request_msg->m_sender, &process_id);
                 break;

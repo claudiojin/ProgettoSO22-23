@@ -32,6 +32,8 @@ extern pcb_t *current_process;
 extern struct list_head blocked_proc[SEMDEVLEN];
 // list of processes waiting for a message
 extern struct list_head frozen_list;
+// Global variable to represent SSI process
+extern pcb_t* ssi_pcb;
 
 void init_ssi();
 void init_test();

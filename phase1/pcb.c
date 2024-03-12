@@ -20,10 +20,13 @@ void initPcbs()
     }
 }
 
-/*
-    Returns the pcb pointed to by p ONLY if it is in the list pointed to by list, NULL otherwise
-    If list is NULL, search through the pcbFree_h list
-*/
+/**
+ * Returns the pcb pointed to by p ONLY if it is in the list pointed to by <code>list</code>, NULL otherwise
+ * If list is NULL, search through the pcbFree_h list
+ * @param p pcb to search
+ * @param list list where we search the pcb
+ * @return pcb p, or NULL if it wasn't found in list
+ */
 pcb_t *searchInList(pcb_t *p, struct list_head *list)
 {
     if (p == NULL)

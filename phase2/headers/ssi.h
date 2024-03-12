@@ -1,16 +1,13 @@
 #ifndef SSI_H
 #define SSI_H
 
-#include "./headers/exceptions.h"
-#include "./headers/scheduler.h"
+#include "./exceptions.h"
+#include "./scheduler.h"
 #include "../../phase1/headers/msg.h"
 
 /**
  * This module implements the System Service Interface.
  */
-
-// Global variable to represent SSI process
-extern pcb_t* ssi_pcb;
 
 // Standard procedure to be called by processes to make service requests
 void SSIRequest(pcb_t* sender, int service, void* arg);

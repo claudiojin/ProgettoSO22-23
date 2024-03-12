@@ -2,7 +2,8 @@
  * @file klog.c
  * @author Maldus512
  * @brief Small library that implements a circular log buffer. When properly traced (with ASCII representation),
- * klog_buffer` displays a series of printed lines. To use it, add "#include "klog.c" to any file you want to debug
+ * klog_buffer` displays a series of printed lines. To use it, add "#include "klog.c" to any file you want to debug,
+ * then trace klog_buffer array to read its contents on umps3
  */
 
 #define KLOG_LINES 64     // Number of lines in the buffer. Adjustable, only limited by available memory
