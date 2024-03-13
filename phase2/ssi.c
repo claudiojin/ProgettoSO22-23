@@ -2,7 +2,10 @@
 /**
 * This module implements the System Service Interface.
 */
+/*
+#define INVALIDPROCESS 
 
+*/
 // Helper function to send a message to the SSI process
 void SSIRequest(pcb_t* sender, int service, void* arg){
 	msg_t* request_msg = allocMsg();
@@ -52,11 +55,31 @@ void create_process_service(pcb_t* sender, ssi_create_process_t* args) {
 // Cause the sender or another process to terminate, included all of the
 // progeny.
 void terminate_process(pcb_t* process){
-	//remove process from the ready queue
 	
-	//remove process and progeny from the pcb tree
-	
-	
+    if (process == NULL){
+        /** Invalid process pointer, ?return an error?
+        msg_t* term_invalid_process = allocMsg();
+        term_invalid_process->m_payload = INVALIDPROCESS
+        send_response(current_process, term_invalid_process);
+        Does it make sense, since eventually it will always be called?
+        **/
+    }
+    
+	outChild(process);
+    pcb_t* child;
+    while ((child = removeChild(process)) != NULL){
+        outProcQ(&ready_queue, child);
+        // check in blocked processes (both device and non-device)
+        for (int i=0; i<SEMDEVLEN; i++){
+            pcb_t* blockedprocess = searchInList(child, &blocked_proc[i]);
+            if(blockedprocess != NULL){
+                outProcQ(&blocked_proc[i],child);
+                freePcb(blockedprocess);
+            }
+        }
+        freePcb(child);
+        terminate_process(child);
+	}
 }
 
 // Expansion of previous function, to distinguish between sender termination
