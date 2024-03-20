@@ -6,14 +6,6 @@
  * handler (e.g. uTLB_RefillHandler).
  */
 
-// The processor state at the time of the exception (the saved exception state) will
-// have been stored (for Processor 0) at the start of the BIOS Data Page. Don't use current process state
-// since it's obsolete
-#define PROCSTATE ((state_t *)BIOSDATAPAGE)
-
-#define SYSTEMCALL_CODE ((int)PROCSTATE->reg_a0)
-#define EXCEPTION_CODE CAUSE_GET_EXCCODE(PROCSTATE->cause)
-
 void uTLB_RefillHandler()
 {
     setENTRYHI(0x80000000);
@@ -57,7 +49,7 @@ int SendMessage(pcb_t *p, unsigned int *payload)
     // search in the frozen list
     if (searchInList(p, &frozen_list))
     {
-        awakeProcess(p);
+        readyProcess(p);
         pushMessage(&p->msg_inbox, &message);
         return 0;
     }
@@ -91,7 +83,7 @@ pcb_t *ReceiveMessage(pcb_t *p, unsigned int *payload)
         else
         {
             // wait for any message
-            freezeProcess(PROCSTATE);
+            blockProcess(PROCSTATE);
         }
     }
     // search for the message
@@ -113,7 +105,7 @@ pcb_t *ReceiveMessage(pcb_t *p, unsigned int *payload)
             }
         }
         // wait for the specified message
-        freezeProcess(PROCSTATE);
+        blockProcess(PROCSTATE);
     }
     return msg_extracted->m_sender;
 }
@@ -129,7 +121,7 @@ void passUpOrDie(int index)
 {
     if (current_process->p_supportStruct == NULL)
     {
-        killProcess();
+        TerminateProces(current_process);
         scheduler();
     }
     else

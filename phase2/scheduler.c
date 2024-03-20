@@ -1,10 +1,10 @@
 #include "./headers/scheduler.h"
 
 /**
- * Sets the current process to a frozen state and calls the scheduler
+ * Sets the current process to a "blocked" state and calls the scheduler
  * @param state the state of the processor to load
  */
-void freezeProcess(state_t *state)
+void blockProcess(state_t *state)
 {
     insertProcQ(&frozen_list, current_process);
     current_process->p_s = *state;
@@ -13,10 +13,10 @@ void freezeProcess(state_t *state)
 }
 
 /**
- * awakes pcb pointed to by p by putting it into the ready queue
+ * sets pcb pointed to by p to a "ready" state by putting it into the ready queue
  * @param p the process to awake
  */
-void awakeProcess(pcb_t *p)
+void readyProcess(pcb_t *p)
 {
     outProcQ(&frozen_list, p);
     insertProcQ(&ready_queue, p);

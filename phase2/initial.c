@@ -11,7 +11,7 @@ int process_count;
 int softBlock_count;
 struct list_head ready_queue;
 pcb_t *current_process;
-struct list_head blocked_proc[SEMDEVLEN];
+struct list_head blocked_proc[SEMDEVLEN+1];
 struct list_head frozen_list;
 pcb_t *ssi_pcb;
 

@@ -5,5 +5,6 @@
 
 void uTLB_RefillHandler();
 void exceptionHandler();
+int SendMessage(pcb_t *p, unsigned int *payload);
 
 #endif

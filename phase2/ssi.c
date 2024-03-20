@@ -54,7 +54,7 @@ void create_process_service(pcb_t* sender, ssi_create_process_t* args) {
 }
 // Cause the sender or another process to terminate, included all of the
 // progeny.
-void terminate_process(pcb_t* process){
+void TerminateProcess(pcb_t* process){
 	
     if (process == NULL){
         /** Invalid process pointer, ?return an error?
@@ -78,20 +78,20 @@ void terminate_process(pcb_t* process){
             }
         }
         freePcb(child);
-        terminate_process(child);
+        TerminateProcess(child);
 	}
 }
 
 // Expansion of previous function, to distinguish between sender termination
 // and other cases. If target is NULL, sender is the process chose for
 // termination.
-void terminate_process_service(pcb_t* sender, pcb_t* target_process){
+void TerminateProcess_service(pcb_t* sender, pcb_t* target_process){
 	if (target_process == NULL){
 		// Terminate sender process and its progeny
-		terminate_process(sender);
+		TerminateProcess(sender);
 	}else{
 		//Terminate target process and its progeny
-		terminate_process(target_process);
+		TerminateProcess(target_process);
 	}
 }
 

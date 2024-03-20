@@ -11,4 +11,4 @@ I Process Control Blocks(descrittori di processi) sono organizzati in code o alb
 L'accesso alle risorse avviene tramite message passing. I Message Blocks (msg) rappresentano i messaggi nel sistema e sono organizzati in code.
 
 # Come compilare
-Lanciare make dalla directory del progetto, dopodichè lanciare umps3. Il file che configura la macchina da selezionare su umps3 è già presente: "fase1".
+Lanciare make dalla directory del progetto, dopodichè lanciare umps3. Il file che configura la macchina da selezionare su umps3 è già presente: "pandos".

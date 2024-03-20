@@ -22,7 +22,7 @@ void send_response(pcb_t* sender, void* response) ;
 void create_process_service(pcb_t* sender, ssi_create_process_t* args);
 
 // Cause the sender or another process to terminate, included all of the progeny
-void terminate_process(pcb_t* process);
+void TerminateProcess(pcb_t* process);
 
 // Expansion of the previous function, to distinguish between sender termination
 // and other cases. If target is NULL, sender is the process chosen for termination.
