@@ -93,8 +93,7 @@ int main()
         mkEmptyProcQ(&blocked_proc[i]);
     
     // initialize Interval Timer device with 100ms
-    // LDIT(PSECOND);
-    resetIntervalTimer();
+    LDIT(PSECOND);
     // Formula used: time scale = #clock_ticks in (10^-6)s[1/us], time slice[us]
     // #clock_ticks = Time[us] * (time scale)[1/us], the value stored in TOD, IT and PLT
     // is always the number of clock ticks
