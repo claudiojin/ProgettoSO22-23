@@ -11,7 +11,8 @@
 
 /* Number of semaphore's device */
 #define SEMDEVLEN 49  // (4 device * 8 sub-device) + (8 terminals * 2)  + 1 (for pseudo clock support) = 49
-#define RECVD    5
+#define DEVNUM    SEMDEVLEN + 1 // 49 device + 1 general purpose
+#define RECVD     5
 
 /* Hardware & software constants */
 #define PAGESIZE 4096 /* page size in bytes	*/
@@ -191,6 +192,8 @@
 #define FLASHBACK    0
 #define BACKINGSTORE FLASHBACK
 
+#define TERM0ADDR 0x10000254
+
 #define UPROCMAX 8
 #define POOLSIZE (UPROCMAX * 2)
 /* End of Mikeyg constants */
@@ -199,5 +202,8 @@
 
 /* Inizio indirizzo di device registers */
 #define START_DEVREG		0x10000054
+
+/* Macro per accesso allo status field dei terminal registers*/
+#define TERMINAL_STATUS(status) (status & 0b11111111)
 
 #endif

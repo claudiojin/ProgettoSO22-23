@@ -21,7 +21,7 @@ void initPcbs()
 }
 
 /**
- * Returns the pcb pointed to by p ONLY if it is in the list pointed to by <code>list</code>, NULL otherwise
+ * Returns the pcb pointed to by p ONLY if it is in the list pointed to by list, NULL otherwise
  * If list is NULL, search through the pcbFree_h list
  * @param p pcb to search
  * @param list list where we search the pcb
@@ -31,22 +31,26 @@ pcb_t *searchInList(pcb_t *p, struct list_head *list)
 {
     if (p == NULL)
         return NULL;
-
+    
     pcb_t *pos;
-    struct list_head head;
+    struct list_head *head;
 
     if (list == NULL)
-        head = pcbFree_h;
+        head = &pcbFree_h;
     else
-        head = *list;
+        head = list;
 
-    if (list_empty(&head))
+    if (list_empty(head))
         return NULL;
-
-    list_for_each_entry(pos, &head, p_list)
+    
+    int i = 0;
+    list_for_each_entry(pos, head, p_list)
     {
+        klog_print("dentro al for: ");
+        klog_print_dec((unsigned int)i);
         if (pos == p)
             return pos;
+        i++;
     }
     return NULL;
 }
@@ -77,7 +81,7 @@ void __resetPcb(pcb_t *p)
     p->p_time = 0;
     INIT_LIST_HEAD(&p->msg_inbox);
     p->p_supportStruct = NULL;
-    // assign the new process an ID
+    // assign an ID to the new process
     p->p_s.entry_hi = p->p_pid = next_pid;
     next_pid++;
 }

@@ -4,6 +4,7 @@
 #include "../../headers/const.h"
 #include "../../headers/types.h"
 #include "../../headers/listx.h"
+#include "../../klog.h"
 
 void initPcbs();
 pcb_t *searchInList(pcb_t *p, struct list_head *head);

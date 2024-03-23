@@ -4,9 +4,9 @@
  * Sets the current process to a "blocked" state and calls the scheduler
  * @param state the state of the processor to load
  */
-void blockProcess(state_t *state)
+void blockProcess(state_t *state, int index)
 {
-    insertProcQ(&frozen_list, current_process);
+    insertProcQ(&blocked_proc[index], current_process);
     current_process->p_s = *state;
     updateProcessCPUTime();
     scheduler();
@@ -15,10 +15,11 @@ void blockProcess(state_t *state)
 /**
  * sets pcb pointed to by p to a "ready" state by putting it into the ready queue
  * @param p the process to awake
+ * @param index index for the blocked proc array
  */
-void readyProcess(pcb_t *p)
+void readyProcess(pcb_t *p, int index)
 {
-    outProcQ(&frozen_list, p);
+    outProcQ(&blocked_proc[index], p);
     insertProcQ(&ready_queue, p);
 }
 
@@ -49,11 +50,45 @@ void updateProcessCPUTime()
     current_process->p_time += IntervalTOD();
 }
 
+/**
+ * Returns the index of blocked_proc[] corresponding to the command address provided
+ * @param cmdAddr command address for the device
+ */
+int getIODeviceIndex(memaddr cmdAddr)
+{
+    int index; // (regAddr - devRegStart) / dimension_of_devReg = total # of devices -> 40
+    memaddr register_addr;
+    memaddr offset = 0;
+
+    // terminal
+    if (cmdAddr >= TERM0ADDR)
+    {
+        // distance between command fields is 8 bit, so if 4th bit is on then it's receiver sub-device
+        if (((cmdAddr >> 3) & 1) == 1)
+        {
+            register_addr = cmdAddr - 0x4;
+        }
+        else
+        {
+            register_addr = cmdAddr - 0xc;
+            offset = 8;
+        }
+    }
+    // non-terminal
+    else
+    {
+        register_addr = cmdAddr - 0x4; // command field for non-terminal devices is at (base)+0x4
+    }
+    index = ((register_addr - DEV_REG_START) / DEV_REG_SIZE) + offset;
+    return index;
+}
+
 void scheduler()
 {
     // get the first process in the ready queue
     current_process = removeProcQ(&ready_queue);
-
+    klog_print(" current process: ");
+    klog_print_hex((unsigned int)current_process);
     // if the Process Count is 1 and the SSI is the only process in the system, invoke HALT
     if (process_count == 1 && current_process->p_pid == 1)
     {
@@ -82,6 +117,7 @@ void scheduler()
     // ready queue has at least one process
     else
     {
+        klog_print("dispatching...");
         // remember to enable PLT for every running process
         current_process->p_s.status = (current_process->p_s.status) | TEBITON;
         // load PLT

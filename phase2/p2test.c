@@ -19,6 +19,8 @@
 #include "../headers/types.h"
 #include <umps/libumps.h>
 
+#include "../klog.h"
+
 typedef unsigned int devregtr;
 
 /* hardware constants */
@@ -175,12 +177,14 @@ pcb_t *create_process(state_t *s)
 /*********************************************************************/
 void test()
 {
+    klog_print("eccoci qua, dentro al TEST");
     test_pcb = current_process;
 
     // test send and receive
     SYSCALL(SENDMESSAGE, (unsigned int)test_pcb, 0, 0);
+    klog_print("send message completata, ora receive message");
     pcb_PTR sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-
+    klog_print("Receive message completata");
     if (sender != test_pcb)
         PANIC();
 

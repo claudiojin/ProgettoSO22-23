@@ -1,9 +1,7 @@
 #ifndef SSI_H
 #define SSI_H
 
-#include "./exceptions.h"
-#include "./scheduler.h"
-#include "../../phase1/headers/msg.h"
+#include "./initial.h"
 
 /**
  * This module implements the System Service Interface.

@@ -7,12 +7,12 @@
 #include "./exceptions.h"
 #include "./ssi.h"
 #include "./interrupts.h"
+#include "../../klog.h"
 #include "../../phase1/headers/pcb.h"
 #include "../../phase1/headers/msg.h"
 #include <umps3/umps/cp0.h>
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/arch.h>
-#include <stdio.h>
 
 // The processor state at the time of the exception (the saved exception state) will
 // have been stored (for Processor 0) at the start of the BIOS Data Page. Don't use current process state
@@ -38,20 +38,16 @@ extern pcb_t *current_process;
  * Pseudo-clock. Since terminal devices are actually two independent sub-devices, the Nucleus maintains
  * two lists/pointers for each terminal device. An additional space has been added for general purpose.
  * Order of lists and their meaning:
- * + Interval Timer[0]
- * + disk devices[1-8]
- * + flash devices[9-16]
- * + network devices[17-24]
- * + printer devices[25-32]
- * + terminals[32-48]
+ * + disk devices[0-7]
+ * + flash devices[8-15]
+ * + network devices[16-23]
+ * + printer devices[24-31]
+ * + terminals[32-47] receiving terminals first, transmitting ones after
+ * + Interval Timer[48]
+ * + general purpose blocked list[49]
  */
-extern struct list_head blocked_proc[SEMDEVLEN + 1];
-// list of processes waiting for a message
-extern struct list_head frozen_list;
+extern struct list_head blocked_proc[DEVNUM];
 // Global variable to represent SSI process
 extern pcb_t *ssi_pcb;
-
-void init_ssi();
-void init_test();
 
 #endif

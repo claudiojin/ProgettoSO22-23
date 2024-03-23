@@ -4,7 +4,7 @@
  * device/timer interrupts into V operations on the appropriate semaphores.
  */
 
-#include "../headers/interrupts.h"
+#include "./headers/interrupts.h"
 
 /**
  * @brief Gestisce l'uscita dall'interrupt handler.
@@ -37,7 +37,8 @@ static void PLTHandler()
 
     current_process->p_s = *PROCSTATE;
     updateProcessCPUTime();
-    if (current_process != NULL) {
+    if (current_process != NULL)
+    {
         // Place the Current Process on the Ready Queue; transitioning the Current Process from the
         // “running” state to the “ready” state
         insertProcQ(&ready_queue, current_process);
@@ -54,14 +55,18 @@ static void ITHandler()
 {
     // Acknowledge the interrupt by loading the Interval Timer with a new value: 100 milliseconds
     LDIT(PSECOND);
+    cpu_t curr_time;
+    STCK(curr_time);
+    klog_print("TOD clock in microsecondi: ");
+    klog_print_dec(curr_time);
     // Unblock all PCBs blocked waiting a Pseudo-clock tick
     pcb_t *pos = NULL;
-    while (pos = removeProcQ(&blocked_proc[0]) != NULL)
+    while ((pos = removeProcQ(&blocked_proc[SEMDEVLEN - 1])) != NULL)
     {
-        readyProcess(pos);
+        readyProcess(pos, SEMDEVLEN - 1);
         softBlock_count--;
     }
-    mkEmptyProcQ(&blocked_proc[0]);
+    mkEmptyProcQ(&blocked_proc[SEMDEVLEN - 1]);
 
     interruptHandlerExit();
 }
@@ -75,7 +80,7 @@ static void ITHandler()
  */
 static unsigned int getDevBitmap(int line)
 {
-    // access the bus register area, loacated at ram base physical address
+    // access the bus register area, located at ram base physical address
     devregarea_t *bus_reg_area = (devregarea_t *)BUS_REG_RAM_BASE;
     return bus_reg_area->interrupt_dev[line - 3];
 }
@@ -87,31 +92,32 @@ static unsigned int getDevBitmap(int line)
  */
 static void devInterruptReturn(unsigned int status, unsigned int *command)
 {
+    ssi_do_io_t doio = {
+        .commandAddr = (memaddr *)command,
+        .commandValue = *command};
+    ssi_payload_t msg_pl = {
+        .service_code = DOIO,
+        .arg = &doio};
     // save off the status code
     unsigned int status_code = status;
     // acknowledge the outstanding interrupt
     *command = ACK;
-    // come trovo il pcb che ha creato la richiesta di I/O? Cerco nelle liste dei pcb bloccati quello che ha
-    // mandato la richiesta del servizio DOIO, che ha un determinao payload
-    ssi_do_io_t arguments = {
-        .commandAddr = command,
-        .commandValue = status_code};
-    ssi_payload_t request_payload = {
-        .service_code = DOIO,
-        .arg = &arguments,
-    };
+
+    int device = getIODeviceIndex((memaddr)command);
+    // TODO: scansione della lista cercando il payload giusto. In teoria l'operazione è sincrona quindi appena
+    // il pcb viene bloccato sulla lista del device richiesto dall'ssi si genera un interrupt
+    pcb_t *waiting_pcb = headProcQ(&blocked_proc[device]);
+
     /*it is possible that there isn’t any PCB waiting for this device. This can happen if
     while waiting for the initiated I/O operation to complete, an ancestor of this PCB was terminated.
     In this case, simply return control to the Current Process*/
-    pcb_t *frozen_pcb = findPcbIORequest();
-    if (frozen_pcb != NULL)
+    if (waiting_pcb != NULL)
     {
-        // send a message and unblock the PCB waiting the status response from this (sub)device
-        SendMessage(frozen_pcb, &status_code);
+        // send the status code message and unblock the PCB waiting the status response from this device
+        SendMessage(waiting_pcb, &status_code);
+        softBlock_count--;
         // Place the stored off status code in the newly unblocked PCB’s v0 register
-        frozen_pcb->p_s.reg_v0 = status_code;
-        // Insert the newly unblocked PCB on the Ready Queue
-        insertProcQ(&ready_queue, frozen_pcb);
+        waiting_pcb->p_s.reg_v0 = status_code;
     }
 }
 
@@ -130,17 +136,18 @@ static void nonTerminalHandler(int line, int device_number)
  * @brief Gestore dei terminali.
  * @param device_number Numero del device.
  */
-static void _terminalHandler(int device_number)
+static void terminalHandler(int device_number)
 {
-    termreg_t *device_register = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, device_number);
-
-    if (TERMINAL_STATUS(device_register->recv_status) == 5)
-    { // Ricezione
-        devInterruptReturn(device_register->recv_status, &device_register->recv_command);
+    termreg_t *terminal_register = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, device_number);
+    // Receiving
+    if (TERMINAL_STATUS(terminal_register->recv_status) == 5)
+    {
+        devInterruptReturn(terminal_register->recv_status, &terminal_register->recv_command);
     }
-    else if (TERMINAL_STATUS(device_register->transm_status) == 5)
-    { // Trasmissione
-        devInterruptReturn(device_register->transm_status, &device_register->transm_command);
+    // Transmitting
+    else if (TERMINAL_STATUS(terminal_register->transm_status) == 5)
+    {
+        devInterruptReturn(terminal_register->transm_status, &terminal_register->transm_command);
     }
     else
     {
@@ -166,7 +173,7 @@ static void deviceHandler(int line)
             if (line != IL_TERMINAL)
                 nonTerminalHandler(line, device_number);
             else
-                _terminalHandler(device_number);
+                terminalHandler(device_number);
 
             interruptHandlerExit();
         }
@@ -177,7 +184,7 @@ static void deviceHandler(int line)
 }
 
 /**
- * @brief Gestore degli interrupt.
+ * Interrupt handler, called with exception code 0
  */
 void interruptHandler()
 {
@@ -190,18 +197,20 @@ void interruptHandler()
 
     // To figure out on which interrupt lines interrupts are pending, you can use a bitwise AND between
     // getCAUSE() and the constants ...INTERRUPT
-    unsigned int ip = getCAUSE();
+    unsigned int ip = PROCSTATE->cause & CAUSE_IP_MASK;
 
     // Priority: PLT > IT > Disk > Flash drive > Printers > Terminals (writing) > Terminals (reading)
 
     // Line 1 (PLT)
     if ((ip & LOCALTIMERINT) != 0)
     {
+        klog_print(" PLT ");
         PLTHandler();
     }
     // Line 2 (IT)
     else if ((ip & TIMERINTERRUPT) != 0)
     {
+        klog_print(" IT ");
         ITHandler();
     }
     // Line 3
@@ -231,6 +240,7 @@ void interruptHandler()
     }
     else
     {
+        klog_print("breakpoint");
         interruptHandlerExit();
     }
 }

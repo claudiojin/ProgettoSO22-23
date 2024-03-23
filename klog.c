@@ -6,6 +6,8 @@
  * then trace klog_buffer array to read its contents on umps3
  */
 
+#include "./klog.h"
+
 #define KLOG_LINES 64     // Number of lines in the buffer. Adjustable, only limited by available memory
 #define KLOG_LINE_SIZE 42 // Length of a single line in characters
 

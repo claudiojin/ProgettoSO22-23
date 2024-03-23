@@ -11,8 +11,7 @@ int process_count;
 int softBlock_count;
 struct list_head ready_queue;
 pcb_t *current_process;
-struct list_head blocked_proc[SEMDEVLEN+1];
-struct list_head frozen_list;
+struct list_head blocked_proc[DEVNUM];
 pcb_t *ssi_pcb;
 
 // pointer to process 0 pass up vector memory location
@@ -21,9 +20,9 @@ passupvector_t *passupvector;
 // function provided by the p2test.c file
 extern void test();
 
-void memcpy(void *dest, const void *src, size_t n)
+void memcpy(void *dest, const void *src, size_tt n)
 {
-    for (size_t i = 0; i < n; i++)
+    for (size_tt i = 0; i < n; i++)
     {
         ((char *)dest)[i] = ((char *)src)[i];
     }
@@ -45,6 +44,8 @@ void init_ssi()
     // insert new initialized process in Ready Queue
     insertProcQ(&ready_queue, ssi_pcb); // ready_queue is the sentinel of the queue
     process_count++;
+    klog_print("ssi_pcb: ");
+    klog_print_hex((unsigned int)ssi_pcb);
 }
 
 // instantiates the test process in the Ready Queue
@@ -65,6 +66,8 @@ void init_test()
     // insert new initialized process in Ready Queue
     insertProcQ(&ready_queue, test_pcb); // ready_queue is the sentinel of the queue
     process_count++;
+    klog_print(" test_pcb: ");
+    klog_print_hex((unsigned int)test_pcb);
 }
 
 int main()
@@ -86,12 +89,12 @@ int main()
     softBlock_count = 0;
     mkEmptyProcQ(&ready_queue); // ready_queue è la sentinella della coda di PCB
     current_process = NULL;
-    for (int i = 0; i < SEMDEVLEN; i++)
+    for (int i = 0; i < DEVNUM; i++)
         mkEmptyProcQ(&blocked_proc[i]);
-    mkEmptyProcQ(&frozen_list);
-
+    
     // initialize Interval Timer device with 100ms
-    LDIT(PSECOND);
+    // LDIT(PSECOND);
+    resetIntervalTimer();
     // Formula used: time scale = #clock_ticks in (10^-6)s[1/us], time slice[us]
     // #clock_ticks = Time[us] * (time scale)[1/us], the value stored in TOD, IT and PLT
     // is always the number of clock ticks
