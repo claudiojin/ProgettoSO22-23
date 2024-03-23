@@ -28,26 +28,27 @@ int SendMessage(pcb_t *p, unsigned int *payload)
         klog_print("destination process passed is null");
         return MSGNOGOOD;
     }
+
+    msg_t *message = allocMsg();
+
+    if (message == NULL)
+        return MSGNOGOOD;
+
+    message->m_sender = current_process;
+    message->m_payload = *payload;
     
     // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
-    if (searchInList(p, NULL) != NULL)
+    if (searchInList(p, NULL) == p)
     {
         klog_print("target process is in pcbfree list");
         return DEST_NOT_EXIST;
     }
     
-    msg_t message = {
-        .m_list.next = NULL,
-        .m_list.prev = NULL,
-        .m_sender = current_process,
-        .m_payload = *payload,
-    };
-    
     // search in the ready queue and current process
     if (searchInList(p, &ready_queue) == p || p == current_process)
     {
         klog_print("pcb found in ready queue or pcb is current process");
-        pushMessage(&p->msg_inbox, &message);
+        pushMessage(&p->msg_inbox, message);
         return 0;
     }
     // search in the blocked lists
@@ -55,9 +56,10 @@ int SendMessage(pcb_t *p, unsigned int *payload)
     {
         if (searchInList(p, &blocked_proc[i]) == p)
         {
-            klog_print("pcb found in blocked list");
+            klog_print("pcb found in blocked list number ");
+            klog_print_dec((unsigned int)i);
             readyProcess(p, i);
-            pushMessage(&p->msg_inbox, &message);
+            pushMessage(&p->msg_inbox, message);
             return 0;
         }
     }
