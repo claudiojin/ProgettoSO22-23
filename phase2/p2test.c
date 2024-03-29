@@ -165,6 +165,7 @@ pcb_t *create_process(state_t *s)
         .service_code = CREATEPROCESS,
         .arg = &ssi_create_process,
     };
+    klog_print("REQUESTING CREATE PROCESS SERVICE");
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&payload, 0);
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&p), 0);
     return p;
@@ -184,7 +185,7 @@ void test()
     SYSCALL(SENDMESSAGE, (unsigned int)test_pcb, 0, 0);
     klog_print("send message completata, ora receive message");
     pcb_PTR sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-    klog_print("Receive message completata");
+    klog_print("Send And Receive checked");
     if (sender != test_pcb)
         PANIC();
 

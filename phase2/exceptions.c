@@ -56,7 +56,7 @@ int SendMessage(pcb_t *p, unsigned int *payload)
     {
         if (searchInList(p, &blocked_proc[i]) == p)
         {
-            klog_print("pcb found in blocked list number ");
+            klog_print("pcb found in blocked list number: ");
             klog_print_dec((unsigned int)i);
             readyProcess(p, i);
             pushMessage(&p->msg_inbox, message);
@@ -88,11 +88,11 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
     {
         if (emptyMessageQ(&current_process->msg_inbox))
         {
-            klog_print("blocca pcb in attesa di un qualsiasi messaggio");
+            klog_print(" blocking process for anymessage ");
             // wait for any message
             blockProcess(PROCSTATE, SEMDEVLEN);
         }
-        klog_print("messaggio qualsiasi estratto");
+        klog_print(" any message extracted ");
         msg_extracted = popMessage(&current_process->msg_inbox, NULL);
         return msg_extracted->m_sender;
     }
@@ -100,27 +100,21 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
     else
     {
         msg_extracted = popMessage(&current_process->msg_inbox, sender);
-        klog_print(" messaggio estratto: ");
+        klog_print(" message extracted: ");
         klog_print_hex((unsigned int)msg_extracted);
         // wait for the specified message
         if (msg_extracted == NULL)
         {
-            klog_print(" blocking ssi process ");
+            klog_print(" blocking process ");
             blockProcess(PROCSTATE, SEMDEVLEN);
         }
-        // the payload should be ignored
-        if (payload == NULL)
-        {
-            return msg_extracted->m_sender;
-        }
-        // match the provided characteristics
-        else
+        // update the payload if needed
+        if (payload != NULL)
         {
             *payload = msg_extracted->m_payload;
-            return msg_extracted->m_sender;
         }
+        return msg_extracted->m_sender;
     }
-    return msg_extracted->m_sender;
 }
 
 /**
@@ -134,11 +128,13 @@ void passUpOrDie(int index)
 {
     if (current_process->p_supportStruct == NULL)
     {
+        klog_print("Die portion");
         TerminateProcess(current_process);
         scheduler();
     }
     else
     {
+        klog_print("Pass Up portion");
         // Copy the saved exception state from the BIOS Data Page to the correct sup_exceptState field
         // of the Current Process
         current_process->p_supportStruct->sup_exceptState[index] = *PROCSTATE;

@@ -6,9 +6,9 @@
  */
 void blockProcess(state_t *state, int index)
 {
-    insertProcQ(&blocked_proc[index], current_process);
     current_process->p_s = *state;
     updateProcessCPUTime();
+    insertProcQ(&blocked_proc[index], current_process);
     scheduler();
 }
 
@@ -89,39 +89,36 @@ void scheduler()
     current_process = removeProcQ(&ready_queue);
     klog_print(" current process: ");
     klog_print_hex((unsigned int)current_process);
-    // if the Process Count is 1 and the SSI is the only process in the system, invoke HALT
-    if (process_count == 1 && current_process->p_pid == 1)
-    {
-        HALT();
-    }
-
+    
     // ready queue is empty
     if (current_process == NULL)
     {
-        if (process_count > 0)
+        // if the Process Count is 1 and the SSI is the only process in the system, invoke HALT
+        if (process_count == 1)
         {
-            // If the Process Count > 0 and the Soft-block Count > 0 enter a Wait State
-            if (softBlock_count > 0)
-            {
-                // enable interrupts and disable PLT: we are waiting for a device interrupt
-                setSTATUS((getSTATUS() | IECON | IMON) & ~TEBITON);
-                WAIT();
-            }
-            // Deadlock!!
-            else
-            {
-                PANIC();
-            }
+            HALT();
+        }
+        // if the Process Count > 1 and the Soft-block Count > 0 enter a Wait State
+        if (process_count > 1 && softBlock_count > 0)
+        {
+            // enable interrupts and disable PLT: we are waiting for a device interrupt
+            setSTATUS((getSTATUS() | IECON | IMON) & ~TEBITON);
+            WAIT();
+        }
+        // Deadlock for μPandOS is defined as when the Process Count > 0 and the Soft-block Count is 0
+        if (process_count > 0 && softBlock_count == 0)
+        {
+            PANIC();
         }
     }
     // ready queue has at least one process
     else
     {
-        klog_print("dispatching...");
         // remember to enable PLT for every running process
         current_process->p_s.status = (current_process->p_s.status) | TEBITON;
         // load PLT
         setTIMER((cpu_t)TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
+        klog_print("dispatching...");
         // Load processor state
         LDST(&current_process->p_s);
     }

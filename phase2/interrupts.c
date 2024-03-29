@@ -193,10 +193,8 @@ void interruptHandler()
     {
         updateProcessCPUTime();
     }
-    setSTATUS(getSTATUS() & ~TEBITON); // Disattivazione PLT
+    setSTATUS(getSTATUS() & ~TEBITON); // Disable PLT
 
-    // To figure out on which interrupt lines interrupts are pending, you can use a bitwise AND between
-    // getCAUSE() and the constants ...INTERRUPT
     unsigned int ip = PROCSTATE->cause & CAUSE_IP_MASK;
 
     // Priority: PLT > IT > Disk > Flash drive > Printers > Terminals (writing) > Terminals (reading)
@@ -240,7 +238,7 @@ void interruptHandler()
     }
     else
     {
-        klog_print("breakpoint");
+        klog_print("Exiting interrupt handler");
         interruptHandlerExit();
     }
 }

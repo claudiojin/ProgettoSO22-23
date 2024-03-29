@@ -56,6 +56,10 @@ void create_process_service(pcb_t *sender, ssi_create_process_t *args)
 // progeny.
 void TerminateProcess(pcb_t *process)
 {
+    if (process == ssi_pcb) {
+        klog_print("SSI PCB KILLED!");
+        PANIC();
+    }
 
     process_count--;
     outChild(process);
@@ -151,8 +155,8 @@ void SSI_server()
     // Loop indefinitely to handle requests
     while (TRUE)
     {
-        
         // Receive a request from the SSI process inbox
+        klog_print("SSI receiving a request");
         msg_t *request_msg = receive_request();
         pcb_t *sender = request_msg->m_sender;
         ssi_payload_PTR payload = (ssi_payload_PTR)request_msg->m_payload;

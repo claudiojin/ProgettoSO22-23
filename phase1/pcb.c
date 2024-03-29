@@ -46,8 +46,8 @@ pcb_t *searchInList(pcb_t *p, struct list_head *list)
     int i = 0;
     list_for_each_entry(pos, head, p_list)
     {
-        klog_print("dentro al for: ");
-        klog_print_dec((unsigned int)i);
+        // klog_print("dentro al for: ");
+        // klog_print_dec((unsigned int)i);
         if (pos == p)
             return pos;
         i++;
