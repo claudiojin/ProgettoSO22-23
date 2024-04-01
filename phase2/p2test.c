@@ -185,10 +185,10 @@ void test()
     SYSCALL(SENDMESSAGE, (unsigned int)test_pcb, 0, 0);
     klog_print("send message completata, ora receive message");
     pcb_PTR sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-    klog_print("Send And Receive checked");
+    
     if (sender != test_pcb)
         PANIC();
-
+    klog_print("Send And Receive checked");
     // init print process
     STST(&printstate);
     printstate.reg_sp = printstate.reg_sp - QPAGE;

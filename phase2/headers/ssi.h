@@ -11,13 +11,13 @@
 void SSIRequest(pcb_t* sender, int service, void* arg);
 
 // Receive a message as the SSI
-msg_t* receive_request();
+pcb_t* receive_request(ssi_payload_t *payload_address);
 
 // As the SSI, send back a response after a service
 void send_response(pcb_t* sender, void* response) ;
 
 // Create a new process, progeny of the sender
-void create_process_service(pcb_t* sender, ssi_create_process_t* args);
+pcb_t *create_process_service(pcb_t* sender, ssi_create_process_t* args);
 
 // Cause the sender or another process to terminate, included all of the progeny
 void TerminateProcess(pcb_t* process);

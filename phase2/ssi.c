@@ -1,20 +1,13 @@
 #include "./headers/ssi.h"
 
-// Helper function to send a message to the SSI process
-void SSIRequest(pcb_t *sender, int service, void *arg)
-{
-    msg_t *request_msg = allocMsg();
-    request_msg->m_sender = sender;
-    request_msg->m_payload = (unsigned int)arg;
-    SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)request_msg, 0);
-}
-
 // As the SSI, receive a message from other processes
-msg_t *receive_request()
+pcb_t *receive_request(ssi_payload_t *payload_address)
 {
-    msg_t *received_msg;
-    SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&received_msg, 0);
-    return received_msg;
+    pcb_PTR sender = NULL;
+    sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, (unsigned int)payload_address, 0);
+    klog_print("arg: ");
+    klog_print_hex((unsigned int)payload_address->arg);
+    return sender;
 }
 
 // As the SSI, send a response back after executing a service
@@ -24,7 +17,7 @@ void send_response(pcb_t *sender, void *response)
 }
 
 // create a new process, progeny of the sender
-void create_process_service(pcb_t *sender, ssi_create_process_t *args)
+pcb_t *create_process_service(pcb_t *sender, ssi_create_process_t *args)
 {
     // Allocate a new PCB
     pcb_t *new_process = allocPcb();
@@ -36,6 +29,7 @@ void create_process_service(pcb_t *sender, ssi_create_process_t *args)
 
     // Initialize PCB fields
     new_process->p_s = *(args->state);
+    klog_print("BREAKPOINT");
     new_process->p_supportStruct = args->support;
 
     // Add the new process to the Ready Queue
@@ -49,14 +43,15 @@ void create_process_service(pcb_t *sender, ssi_create_process_t *args)
     // Initialize p_time to zero
     new_process->p_time = 0;
 
-    send_response(sender, new_process);
+    return new_process;
 }
 
 // Cause the sender or another process to terminate, included all of the
 // progeny.
 void TerminateProcess(pcb_t *process)
 {
-    if (process == ssi_pcb) {
+    if (process == ssi_pcb)
+    {
         klog_print("SSI PCB KILLED!");
         PANIC();
     }
@@ -117,6 +112,7 @@ void DoIO_service(pcb_t *sender, ssi_do_io_t *arg)
 
 int get_cpu_time(pcb_t *sender)
 {
+    sender->p_time += IntervalTOD();
     return sender->p_time;
 }
 
@@ -149,81 +145,89 @@ int get_process_id(pcb_t *sender, int arg)
     }
 }
 
+// Process the incoming request
+void SSIRequest(pcb_t *sender, int service, void *arg)
+{
+    // Satisfy the received request based on the service code
+    switch (service)
+    {
+    case CREATEPROCESS:
+        klog_print("create");
+        pcb_t *child_process = create_process_service(sender, (ssi_create_process_PTR)arg);
+
+        send_response(sender, child_process);
+        break;
+    case TERMPROCESS:
+        klog_print("terminate");
+        terminate_process_service(sender, (pcb_PTR)arg);
+
+        send_response(sender, NULL);
+        break;
+    case DOIO:
+        klog_print("DOIO");
+        DoIO_service(sender, (ssi_do_io_PTR)arg);
+        // response is handled in the device interrupt Handler
+        break;
+    case GETTIME:
+        klog_print("get time");
+        // Get the CPU time for the sender process
+        int cpu_time = get_cpu_time(sender);
+        // Send back CPU time as a response
+        send_response(sender, &cpu_time);
+        break;
+    case CLOCKWAIT:
+        klog_print("clock wait");
+        wait_for_clock_service(sender);
+
+        send_response(sender, NULL);
+        break;
+    case GETSUPPORTPTR:
+        klog_print("get support");
+        // Get the Support Structure for the sender process
+        support_t *support_data = get_support_data(sender);
+        // Send the Support Structure back as a response
+        send_response(sender, support_data);
+        break;
+    case GETPROCESSID:
+        klog_print("get pid");
+        // Get the pid based on the argument
+        int process_id = get_process_id(sender, (int)arg);
+        // Send back pid as a response
+        send_response(sender, &process_id);
+        break;
+    // Handle other services if needed
+    default:
+        klog_print("default: kill process");
+        // Invalid service code, terminate the process and its progeny
+        TerminateProcess(sender);
+    }
+}
+
 // SSI basic server algorithm (implements the RPC)
 void SSI_server()
 {
     // Loop indefinitely to handle requests
     while (TRUE)
     {
+        pcb_t *sender = NULL;
+        ssi_payload_t payload = {
+            .service_code = 0,
+            .arg = NULL,
+        };
+        
+        klog_print("payload address: ");
+        klog_print_hex((unsigned int)&payload);
+
         // Receive a request from the SSI process inbox
-        klog_print("SSI receiving a request");
-        msg_t *request_msg = receive_request();
-        pcb_t *sender = request_msg->m_sender;
-        ssi_payload_PTR payload = (ssi_payload_PTR)request_msg->m_payload;
-        int service_code = payload->service_code;
-        // Satisfy the received request based on the service code
-        switch (service_code)
-        {
-        case CREATEPROCESS:
-        {
-            klog_print("create");
-            create_process_service(sender, payload->arg);
-            break;
-        }
-        case TERMPROCESS:
-        {
-            klog_print("terminate");
-            pcb_t *target_process = (pcb_t *)request_msg->m_payload;
-            terminate_process_service(sender, target_process);
-            break;
-        }
-        case DOIO:
-        {
-            klog_print("DOIO");
-            ssi_do_io_t *argument = (ssi_do_io_t *)payload->arg;
-            DoIO_service(sender, argument);
-            break;
-        }
-        case GETTIME:
-        {
-            klog_print("get time");
-            // Get the CPU time for the sender process
-            int cpu_time = get_cpu_time(sender);
-            cpu_time += IntervalTOD();
-            // Send back CPU time as a response
-            send_response(sender, &cpu_time);
-            break;
-        }
-        case CLOCKWAIT:
-        {
-            klog_print("clock wait");
-            wait_for_clock_service(sender);
-            break;
-        }
-        case GETSUPPORTPTR:
-        {
-            klog_print("get support");
-            // Get the Support Structure for the sender process
-            support_t *support_data = get_support_data(sender);
-            // Send the Support Structure back as a response
-            send_response(sender, support_data);
-            break;
-        }
-        case GETPROCESSID:
-        {
-            klog_print("get pid");
-            // int arg = (int)request_msg->m_payload;
-            // Get the pid based on the argument
-            int process_id = get_process_id(sender, (int)payload->arg);
-            // Send back pid as a response
-            send_response(sender, &process_id);
-            break;
-        }
-        // Handle other services if needed
-        default:
-            klog_print("default: kill process");
-            // Invalid service code, terminate the process and its progeny
-            TerminateProcess(sender);
-        }
+        sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, (unsigned int)&payload, 0);
+        // pcb_t *sender = receive_request(&payload);
+
+        klog_print("payload service code: ");
+        klog_print_dec((unsigned int)payload.service_code);
+        klog_print("payload arg addr: ");
+        klog_print_hex((unsigned int)payload.arg);
+
+        klog_print(" handling ssi request ");
+        SSIRequest(sender, payload.service_code, payload.arg);
     }
 }

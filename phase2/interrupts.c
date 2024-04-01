@@ -13,7 +13,7 @@ static void interruptHandlerExit()
 {
     setSTATUS(getSTATUS() | TEBITON); // enable PLT
     IntervalTOD();
-
+    
     // Return control to the Current Process: Perform a LDST on the saved exception state
     if (current_process != NULL)
     {
@@ -34,18 +34,17 @@ static void PLTHandler()
 {
     // Ack PLT
     setTIMER((cpu_t)TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
-
-    current_process->p_s = *PROCSTATE;
+    // klog_print("PLT timer value: ");
+    // klog_print_hex(curr_time);
     updateProcessCPUTime();
-    if (current_process != NULL)
-    {
-        // Place the Current Process on the Ready Queue; transitioning the Current Process from the
-        // “running” state to the “ready” state
-        insertProcQ(&ready_queue, current_process);
+    current_process->p_s = *PROCSTATE;
 
-        current_process = NULL;
-        scheduler();
-    }
+    // Place the Current Process on the Ready Queue; transitioning the Current Process from the
+    // “running” state to the “ready” state
+    insertProcQ(&ready_queue, current_process);
+
+    current_process = NULL;
+    scheduler();
 }
 
 /**
@@ -55,14 +54,12 @@ static void ITHandler()
 {
     // Acknowledge the interrupt by loading the Interval Timer with a new value: 100 milliseconds
     LDIT(PSECOND);
-    cpu_t curr_time;
-    STCK(curr_time);
-    klog_print("TOD clock in microsecondi: ");
-    klog_print_dec(curr_time);
+    
     // Unblock all PCBs blocked waiting a Pseudo-clock tick
     pcb_t *pos = NULL;
     while ((pos = removeProcQ(&blocked_proc[SEMDEVLEN - 1])) != NULL)
     {
+        klog_print("awakening IT process");
         readyProcess(pos, SEMDEVLEN - 1);
         softBlock_count--;
     }
@@ -140,12 +137,12 @@ static void terminalHandler(int device_number)
 {
     termreg_t *terminal_register = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, device_number);
     // Receiving
-    if (TERMINAL_STATUS(terminal_register->recv_status) == 5)
+    if (TERMINAL_STATUS(terminal_register->recv_status) == OKCHARTRANS)
     {
         devInterruptReturn(terminal_register->recv_status, &terminal_register->recv_command);
     }
     // Transmitting
-    else if (TERMINAL_STATUS(terminal_register->transm_status) == 5)
+    else if (TERMINAL_STATUS(terminal_register->transm_status) == OKCHARTRANS)
     {
         devInterruptReturn(terminal_register->transm_status, &terminal_register->transm_command);
     }

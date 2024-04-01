@@ -89,7 +89,7 @@ void scheduler()
     current_process = removeProcQ(&ready_queue);
     klog_print(" current process: ");
     klog_print_hex((unsigned int)current_process);
-    
+
     // ready queue is empty
     if (current_process == NULL)
     {
@@ -101,6 +101,7 @@ void scheduler()
         // if the Process Count > 1 and the Soft-block Count > 0 enter a Wait State
         if (process_count > 1 && softBlock_count > 0)
         {
+            klog_print(" Wait State ");
             // enable interrupts and disable PLT: we are waiting for a device interrupt
             setSTATUS((getSTATUS() | IECON | IMON) & ~TEBITON);
             WAIT();
@@ -108,6 +109,7 @@ void scheduler()
         // Deadlock for μPandOS is defined as when the Process Count > 0 and the Soft-block Count is 0
         if (process_count > 0 && softBlock_count == 0)
         {
+            klog_print(" DEADLOCK ");            
             PANIC();
         }
     }
@@ -119,6 +121,7 @@ void scheduler()
         // load PLT
         setTIMER((cpu_t)TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
         klog_print("dispatching...");
+        IntervalTOD();
         // Load processor state
         LDST(&current_process->p_s);
     }

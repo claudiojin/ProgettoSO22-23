@@ -198,7 +198,7 @@
 #define POOLSIZE (UPROCMAX * 2)
 /* End of Mikeyg constants */
 
-#define CHARRECV			5		/* Character received*/
+#define CHARRECV			5		/* Character received */
 
 /* Inizio indirizzo di device registers */
 #define START_DEVREG		0x10000054

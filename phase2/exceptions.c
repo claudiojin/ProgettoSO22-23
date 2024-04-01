@@ -22,6 +22,11 @@ void uTLB_RefillHandler()
  */
 int SendMessage(pcb_t *p, unsigned int *payload)
 {
+    // In case of SYS1 or non-blocking SYS2, the PC must be incremented by 4
+    // (i.e. the μMPS3 wordsize, constant WORDLEN) prior to returning control
+    // to the interrupted execution stream
+    PROCSTATE->pc_epc += WORDLEN;
+
     klog_print("dentro a SendMessage");
     if (p == NULL)
     {
@@ -37,6 +42,19 @@ int SendMessage(pcb_t *p, unsigned int *payload)
     message->m_sender = current_process;
     message->m_payload = *payload;
     
+    klog_print(" message address: ");
+    klog_print_hex((unsigned int)message);
+
+    if (p == ssi_pcb) {
+        ssi_payload_t *ssi_payload = (ssi_payload_PTR)&message->m_payload;
+        klog_print(" ssi service code: ");
+        klog_print_hex(ssi_payload->service_code);
+        klog_print(" ssi payload arg: ");
+        klog_print_hex((unsigned int)ssi_payload->arg);
+        klog_print(" ssi payload address: ");
+        klog_print_hex((unsigned int)ssi_payload);
+    }
+
     // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
     if (searchInList(p, NULL) == p)
     {
@@ -44,8 +62,8 @@ int SendMessage(pcb_t *p, unsigned int *payload)
         return DEST_NOT_EXIST;
     }
     
-    // search in the ready queue and current process
-    if (searchInList(p, &ready_queue) == p || p == current_process)
+    // search in the ready queue or current process
+    if (p == current_process || searchInList(p, &ready_queue) == p)
     {
         klog_print("pcb found in ready queue or pcb is current process");
         pushMessage(&p->msg_inbox, message);
@@ -79,42 +97,52 @@ int SendMessage(pcb_t *p, unsigned int *payload)
 pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
 {
     klog_print("dentro a ReceiveMessage");
-    if (sender == NULL)
-        return NULL;
-
+    
     msg_t *msg_extracted = NULL;
     // extract the first message from the requesting process inbox
     if (sender == ANYMESSAGE)
     {
-        if (emptyMessageQ(&current_process->msg_inbox))
-        {
-            klog_print(" blocking process for anymessage ");
-            // wait for any message
-            blockProcess(PROCSTATE, SEMDEVLEN);
-        }
-        klog_print(" any message extracted ");
         msg_extracted = popMessage(&current_process->msg_inbox, NULL);
-        return msg_extracted->m_sender;
+        klog_print(" any message extracted: ");
+        klog_print_hex((unsigned int)msg_extracted);
     }
-    // search for the message
+    // search for the specified message
     else
     {
         msg_extracted = popMessage(&current_process->msg_inbox, sender);
         klog_print(" message extracted: ");
         klog_print_hex((unsigned int)msg_extracted);
-        // wait for the specified message
-        if (msg_extracted == NULL)
-        {
-            klog_print(" blocking process ");
-            blockProcess(PROCSTATE, SEMDEVLEN);
-        }
-        // update the payload if needed
-        if (payload != NULL)
-        {
-            *payload = msg_extracted->m_payload;
-        }
-        return msg_extracted->m_sender;
     }
+    // wait for the specified message
+    if (msg_extracted == NULL)
+    {
+        klog_print(" blocking process ");
+        blockProcess(PROCSTATE, SEMDEVLEN);
+    }
+    // update the payload if needed
+    if (payload != NULL)
+    {
+        *payload = msg_extracted->m_payload;
+        if (current_process == ssi_pcb)
+        {
+            ssi_payload_t *ssi_payload = (ssi_payload_PTR)&msg_extracted->m_payload;
+            klog_print(" ssi service code: ");
+            klog_print_hex(ssi_payload->service_code);
+            klog_print(" ssi payload arg: ");
+            klog_print_hex((unsigned int)ssi_payload->arg);
+            klog_print(" ssi payload address: ");
+            klog_print_hex((unsigned int)ssi_payload);
+        }
+    }
+
+    // In case of SYS1 or non-blocking SYS2, the PC must be incremented by 4
+    // (i.e. the μMPS3 wordsize, constant WORDLEN) prior to returning control
+    // to the interrupted execution stream
+    PROCSTATE->pc_epc += WORDLEN;
+
+    pcb_PTR extracted_sender = msg_extracted->m_sender;
+    freeMsg(msg_extracted);
+    return extracted_sender;
 }
 
 /**
@@ -177,11 +205,6 @@ void systemCallHandler()
         klog_print("syscall code >= 1");
         passUpOrDie(GENERALEXCEPT);
     }
-
-    // In case of SYS1 or non-blocking SYS2, the PC must be incremented by 4
-    // (i.e. the μMPS3 wordsize, constant WORDLEN) prior to returning control
-    // to the interrupted execution stream
-    PROCSTATE->pc_epc += WORDLEN;
 
     switch (SYSTEMCALL_CODE)
     {
