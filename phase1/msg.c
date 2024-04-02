@@ -33,12 +33,13 @@ void freeMsg(msg_t *m)
 /*
     Resets all the fields of the msg provided
 */
-void resetMsg(msg_t *m)
+void __resetMsg(msg_t *m)
 {
     INIT_LIST_HEAD(&m->m_list);
     m->m_payload = 0;
     m->m_sender = NULL;
-    // m->m_service_code = -1; // default case, terminated if caught by ssi
+    m->ssi_payload.service_code = -1;
+    m->ssi_payload.arg = NULL;
 }
 
 /*
@@ -57,7 +58,7 @@ msg_t *allocMsg()
         msg_t *m = container_of(msgFree_h.next, msg_t, m_list);
         list_del(&m->m_list);
         // reset all fields
-        resetMsg(m);
+        __resetMsg(m);
         return m;
     }
 }

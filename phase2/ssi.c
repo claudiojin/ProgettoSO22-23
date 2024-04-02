@@ -29,7 +29,6 @@ pcb_t *create_process_service(pcb_t *sender, ssi_create_process_t *args)
 
     // Initialize PCB fields
     new_process->p_s = *(args->state);
-    klog_print("BREAKPOINT");
     new_process->p_supportStruct = args->support;
 
     // Add the new process to the Ready Queue
@@ -210,10 +209,7 @@ void SSI_server()
     while (TRUE)
     {
         pcb_t *sender = NULL;
-        ssi_payload_t payload = {
-            .service_code = 0,
-            .arg = NULL,
-        };
+        ssi_payload_t payload;
         
         klog_print("payload address: ");
         klog_print_hex((unsigned int)&payload);

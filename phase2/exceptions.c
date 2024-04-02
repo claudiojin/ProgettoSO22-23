@@ -39,20 +39,25 @@ int SendMessage(pcb_t *p, unsigned int *payload)
     if (message == NULL)
         return MSGNOGOOD;
 
-    message->m_sender = current_process;
-    message->m_payload = *payload;
-    
     klog_print(" message address: ");
     klog_print_hex((unsigned int)message);
 
+    message->m_sender = current_process;
+
     if (p == ssi_pcb) {
-        ssi_payload_t *ssi_payload = (ssi_payload_PTR)&message->m_payload;
+        ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload; 
+        message->ssi_payload.service_code = cast_payload->service_code;
+        message->ssi_payload.arg = cast_payload->arg;
+        
         klog_print(" ssi service code: ");
-        klog_print_hex(ssi_payload->service_code);
+        klog_print_hex(message->ssi_payload.service_code);
         klog_print(" ssi payload arg: ");
-        klog_print_hex((unsigned int)ssi_payload->arg);
+        klog_print_hex((unsigned int)message->ssi_payload.arg);
         klog_print(" ssi payload address: ");
-        klog_print_hex((unsigned int)ssi_payload);
+        klog_print_hex((unsigned int)&message->ssi_payload);
+    }
+    else {
+        message->m_payload = *payload;
     }
 
     // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
@@ -90,7 +95,8 @@ int SendMessage(pcb_t *p, unsigned int *payload)
  * This is a synchronous operation since the requesting process will be frozen until a message matching
  * the required characteristics doesn’t arrive.
  * @param sender sender's PCB
- * @param payload the extracted message's payload: either of type char*, an unsigned int*(devregtr), int*, cpu_t*,
+ * @param payload a pointer to an area where the nucleus will store the
+payload of the message (NULL if the payload should be ignored) either of type char*, an unsigned int*(devregtr), int*, cpu_t*,
  * pcb_t*, support_t*
  * @returns the process which sent the message extracted
  */
@@ -122,16 +128,22 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
     // update the payload if needed
     if (payload != NULL)
     {
-        *payload = msg_extracted->m_payload;
         if (current_process == ssi_pcb)
         {
-            ssi_payload_t *ssi_payload = (ssi_payload_PTR)&msg_extracted->m_payload;
+            ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
+            
+            cast_payload->service_code = msg_extracted->ssi_payload.service_code;
+            cast_payload->arg = msg_extracted->ssi_payload.arg;
             klog_print(" ssi service code: ");
-            klog_print_hex(ssi_payload->service_code);
+            klog_print_hex(cast_payload->service_code);
             klog_print(" ssi payload arg: ");
-            klog_print_hex((unsigned int)ssi_payload->arg);
+            klog_print_hex((unsigned int)cast_payload->arg);
             klog_print(" ssi payload address: ");
-            klog_print_hex((unsigned int)ssi_payload);
+            klog_print_hex((unsigned int)cast_payload);
+        }
+        else
+        {
+            *payload = msg_extracted->m_payload;
         }
     }
 

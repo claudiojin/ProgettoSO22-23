@@ -36,6 +36,24 @@ typedef struct support_t {
     struct list_head s_list;
 } support_t;
 
+typedef struct ssi_payload_t
+{
+    int service_code;
+    void *arg;
+} ssi_payload_t, *ssi_payload_PTR;
+
+typedef struct ssi_create_process_t
+{
+    state_t *state;
+    support_t *support;
+} ssi_create_process_t, *ssi_create_process_PTR;
+
+typedef struct ssi_do_io_t
+{
+    memaddr *commandAddr;
+    unsigned int commandValue;
+} ssi_do_io_t, *ssi_do_io_PTR;
+
 /* process table entry type */
 typedef struct pcb_t
 {
@@ -72,24 +90,9 @@ typedef struct msg_t
 
     /* the payload of the message */
 	unsigned int m_payload;
+
+    /* ssi payload */
+    ssi_payload_t ssi_payload;
 } msg_t, *msg_PTR;
-
-typedef struct ssi_payload_t
-{
-    int service_code;
-    void *arg;
-} ssi_payload_t, *ssi_payload_PTR;
-
-typedef struct ssi_create_process_t
-{
-    state_t *state;
-    support_t *support;
-} ssi_create_process_t, *ssi_create_process_PTR;
-
-typedef struct ssi_do_io_t
-{
-    memaddr *commandAddr;
-    unsigned int commandValue;
-} ssi_do_io_t, *ssi_do_io_PTR;
 
 #endif

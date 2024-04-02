@@ -116,11 +116,11 @@ void scheduler()
     // ready queue has at least one process
     else
     {
+        klog_print("dispatching...");
         // remember to enable PLT for every running process
         current_process->p_s.status = (current_process->p_s.status) | TEBITON;
         // load PLT
         setTIMER((cpu_t)TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
-        klog_print("dispatching...");
         IntervalTOD();
         // Load processor state
         LDST(&current_process->p_s);
