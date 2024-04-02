@@ -39,11 +39,12 @@ int SendMessage(pcb_t *p, unsigned int *payload)
     if (message == NULL)
         return MSGNOGOOD;
 
-    klog_print(" message address: ");
-    klog_print_hex((unsigned int)message);
+    klog_print(" destination address: ");
+    klog_print_hex((unsigned int)p);
 
     message->m_sender = current_process;
 
+    // payload handling
     if (p == ssi_pcb) {
         ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload; 
         message->ssi_payload.service_code = cast_payload->service_code;
@@ -56,8 +57,11 @@ int SendMessage(pcb_t *p, unsigned int *payload)
         klog_print(" ssi payload address: ");
         klog_print_hex((unsigned int)&message->ssi_payload);
     }
-    else {
+    else if (current_process == ssi_pcb) {
         message->m_payload = *payload;
+    }
+    else {
+        message->string_payload = (char *)payload;
     }
 
     // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
@@ -95,9 +99,8 @@ int SendMessage(pcb_t *p, unsigned int *payload)
  * This is a synchronous operation since the requesting process will be frozen until a message matching
  * the required characteristics doesn’t arrive.
  * @param sender sender's PCB
- * @param payload a pointer to an area where the nucleus will store the
-payload of the message (NULL if the payload should be ignored) either of type char*, an unsigned int*(devregtr), int*, cpu_t*,
- * pcb_t*, support_t*
+ * @param payload a pointer to an area where the nucleus will store the payload of the message (NULL if the payload should be ignored)
+ * either of type char*, an unsigned int*(devregtr), int*, cpu_t*, pcb_t*, support_t*
  * @returns the process which sent the message extracted
  */
 pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
@@ -141,8 +144,11 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
             klog_print(" ssi payload address: ");
             klog_print_hex((unsigned int)cast_payload);
         }
-        else
+        else if (msg_extracted->string_payload != NULL)
         {
+            *payload = (unsigned int)msg_extracted->string_payload;
+        }
+        else {
             *payload = msg_extracted->m_payload;
         }
     }

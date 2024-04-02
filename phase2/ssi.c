@@ -24,7 +24,8 @@ pcb_t *create_process_service(pcb_t *sender, ssi_create_process_t *args)
 
     if (new_process == NULL)
     {
-        send_response(sender, (int *)NOPROC);
+        int ret = NOPROC;
+        send_response(sender, (int *)&ret);
     }
 
     // Initialize PCB fields
@@ -100,8 +101,12 @@ void terminate_process_service(pcb_t *sender, pcb_t *target_process)
 void DoIO_service(pcb_t *sender, ssi_do_io_t *arg)
 {
     int index = getIODeviceIndex(*arg->commandAddr);
+    klog_print(" SENDER ADRR: ");
+    klog_print_hex((unsigned int)sender);
+    klog_print(" DEVICE INDEX: ");
+    klog_print_dec((unsigned int)index);
     // take the pcb from the general purpose list and put it in the right blocked_proc list
-    outProcQ(&blocked_proc[DEVNUM], sender);
+    outProcQ(&blocked_proc[SEMDEVLEN], sender);
     insertProcQ(&blocked_proc[index], sender);
     softBlock_count++;
     *arg->commandAddr = arg->commandValue;
@@ -154,7 +159,7 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
         klog_print("create");
         pcb_t *child_process = create_process_service(sender, (ssi_create_process_PTR)arg);
 
-        send_response(sender, child_process);
+        send_response(sender, &child_process);
         break;
     case TERMPROCESS:
         klog_print("terminate");

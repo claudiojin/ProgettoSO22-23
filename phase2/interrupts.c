@@ -103,7 +103,7 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
     int device = getIODeviceIndex((memaddr)command);
     // TODO: scansione della lista cercando il payload giusto. In teoria l'operazione è sincrona quindi appena
     // il pcb viene bloccato sulla lista del device richiesto dall'ssi si genera un interrupt
-    pcb_t *waiting_pcb = headProcQ(&blocked_proc[device]);
+    pcb_t *waiting_pcb = removeProcQ(&blocked_proc[device]);
 
     /*it is possible that there isn’t any PCB waiting for this device. This can happen if
     while waiting for the initiated I/O operation to complete, an ancestor of this PCB was terminated.

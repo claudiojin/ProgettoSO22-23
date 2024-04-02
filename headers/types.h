@@ -91,6 +91,9 @@ typedef struct msg_t
     /* the payload of the message */
 	unsigned int m_payload;
 
+    /* string payload */
+    char *string_payload;
+
     /* ssi payload */
     ssi_payload_t ssi_payload;
 } msg_t, *msg_PTR;

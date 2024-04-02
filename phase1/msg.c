@@ -40,6 +40,7 @@ void __resetMsg(msg_t *m)
     m->m_sender = NULL;
     m->ssi_payload.service_code = -1;
     m->ssi_payload.arg = NULL;
+    m->string_payload = NULL;
 }
 
 /*
