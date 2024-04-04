@@ -105,8 +105,6 @@ void print()
         devregtr *command = base + 3;
         devregtr status;
 
-        klog_print(s);
-
         while (*s != EOS)
         {
             devregtr value = PRINTCHR | (((devregtr)*s) << 8);
@@ -180,7 +178,6 @@ pcb_t *create_process(state_t *s)
 /*********************************************************************/
 void test()
 {
-    klog_print("eccoci qua, dentro al TEST");
     test_pcb = current_process;
 
     // test send and receive
@@ -201,10 +198,6 @@ void test()
 
     if ((int)print_pcb == NOPROC)
         PANIC();
-
-    klog_print("PRINT PROCESS ADRR: ");
-    klog_print_hex((unsigned int)print_pcb);
-    // klog_print("TESTING PRINT PROCESS");
 
     // test print process
     print_term0("Don't Panic.\n");

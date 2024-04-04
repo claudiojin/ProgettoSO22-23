@@ -117,7 +117,7 @@
 #define DEV7ON 0x00000080
 
 
-#define OKCHARTRANS  5
+#define OKCHARTRANS  5      // Character transmitted
 #define TRANSMITCHAR 2
 #define RECEIVECHAR 	2		// aggiunta comando di ricezione del carattere
 #define PRINTCHR	2		// aggiunta comando di stampa del carattere

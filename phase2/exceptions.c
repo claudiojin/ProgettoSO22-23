@@ -27,7 +27,7 @@ int SendMessage(pcb_t *p, unsigned int *payload)
     // to the interrupted execution stream
     PROCSTATE->pc_epc += WORDLEN;
 
-    klog_print("dentro a SendMessage");
+    klog_print(" SENDMESSAGE ");
     if (p == NULL)
     {
         klog_print("destination process passed is null");
@@ -54,8 +54,6 @@ int SendMessage(pcb_t *p, unsigned int *payload)
         klog_print_hex(message->ssi_payload.service_code);
         klog_print(" ssi payload arg: ");
         klog_print_hex((unsigned int)message->ssi_payload.arg);
-        klog_print(" ssi payload address: ");
-        klog_print_hex((unsigned int)&message->ssi_payload);
     }
     else if (current_process == ssi_pcb) {
         message->m_payload = *payload;
@@ -105,7 +103,7 @@ int SendMessage(pcb_t *p, unsigned int *payload)
  */
 pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
 {
-    klog_print("dentro a ReceiveMessage");
+    klog_print(" RECEIVEMESSAGE ");
     
     msg_t *msg_extracted = NULL;
     // extract the first message from the requesting process inbox
@@ -141,8 +139,6 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
             klog_print_hex(cast_payload->service_code);
             klog_print(" ssi payload arg: ");
             klog_print_hex((unsigned int)cast_payload->arg);
-            klog_print(" ssi payload address: ");
-            klog_print_hex((unsigned int)cast_payload);
         }
         else if (msg_extracted->string_payload != NULL)
         {

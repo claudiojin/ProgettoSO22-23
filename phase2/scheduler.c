@@ -51,8 +51,8 @@ void updateProcessCPUTime()
 }
 
 /**
- * Returns the index of blocked_proc[] corresponding to the command address provided
- * @param cmdAddr command address for the device
+ * @param cmdAddr command address of the device
+ * @return the index of blocked_proc[] corresponding to the command address provided
  */
 int getIODeviceIndex(memaddr cmdAddr)
 {
@@ -79,7 +79,12 @@ int getIODeviceIndex(memaddr cmdAddr)
     {
         register_addr = cmdAddr - 0x4; // command field for non-terminal devices is at (base)+0x4
     }
-    index = ((register_addr - DEV_REG_START) / DEV_REG_SIZE) + offset;
+    index = (int)((register_addr - DEV_REG_START) / DEV_REG_SIZE) + offset;
+
+    klog_print(" cmdAddr: ");
+    klog_print_hex(cmdAddr);
+    klog_print(" Dev Index: ");
+    klog_print_dec((unsigned int)index);
     return index;
 }
 
@@ -116,7 +121,7 @@ void scheduler()
     // ready queue has at least one process
     else
     {
-        klog_print("dispatching...");
+        klog_print("dispatching...\n");
         // remember to enable PLT for every running process
         current_process->p_s.status = (current_process->p_s.status) | TEBITON;
         // load PLT

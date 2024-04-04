@@ -100,10 +100,10 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
     // acknowledge the outstanding interrupt
     *command = ACK;
 
-    int device = getIODeviceIndex((memaddr)command);
+    int index = getIODeviceIndex((memaddr)command);
     // TODO: scansione della lista cercando il payload giusto. In teoria l'operazione è sincrona quindi appena
     // il pcb viene bloccato sulla lista del device richiesto dall'ssi si genera un interrupt
-    pcb_t *waiting_pcb = removeProcQ(&blocked_proc[device]);
+    pcb_t *waiting_pcb = removeProcQ(&blocked_proc[index]);
 
     /*it is possible that there isn’t any PCB waiting for this device. This can happen if
     while waiting for the initiated I/O operation to complete, an ancestor of this PCB was terminated.
@@ -111,6 +111,7 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
     if (waiting_pcb != NULL)
     {
         // send the status code message and unblock the PCB waiting the status response from this device
+        insertProcQ(&blocked_proc[SEMDEVLEN], waiting_pcb);
         SendMessage(waiting_pcb, &status_code);
         softBlock_count--;
         // Place the stored off status code in the newly unblocked PCB’s v0 register
@@ -137,7 +138,7 @@ static void terminalHandler(int device_number)
 {
     termreg_t *terminal_register = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, device_number);
     // Receiving
-    if (TERMINAL_STATUS(terminal_register->recv_status) == OKCHARTRANS)
+    if (TERMINAL_STATUS(terminal_register->recv_status) == CHARRECV)
     {
         devInterruptReturn(terminal_register->recv_status, &terminal_register->recv_command);
     }
@@ -199,13 +200,13 @@ void interruptHandler()
     // Line 1 (PLT)
     if ((ip & LOCALTIMERINT) != 0)
     {
-        klog_print(" PLT ");
+        klog_print("PLT");
         PLTHandler();
     }
     // Line 2 (IT)
     else if ((ip & TIMERINTERRUPT) != 0)
     {
-        klog_print(" IT ");
+        klog_print("IT");
         ITHandler();
     }
     // Line 3

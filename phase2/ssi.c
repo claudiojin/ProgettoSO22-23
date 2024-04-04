@@ -100,11 +100,8 @@ void terminate_process_service(pcb_t *sender, pcb_t *target_process)
 
 void DoIO_service(pcb_t *sender, ssi_do_io_t *arg)
 {
-    int index = getIODeviceIndex(*arg->commandAddr);
-    klog_print(" SENDER ADRR: ");
-    klog_print_hex((unsigned int)sender);
-    klog_print(" DEVICE INDEX: ");
-    klog_print_dec((unsigned int)index);
+    int index = getIODeviceIndex((memaddr)arg->commandAddr);
+
     // take the pcb from the general purpose list and put it in the right blocked_proc list
     outProcQ(&blocked_proc[SEMDEVLEN], sender);
     insertProcQ(&blocked_proc[index], sender);
@@ -216,19 +213,19 @@ void SSI_server()
         pcb_t *sender = NULL;
         ssi_payload_t payload;
         
-        klog_print("payload address: ");
-        klog_print_hex((unsigned int)&payload);
+        // klog_print("payload address: ");
+        // klog_print_hex((unsigned int)&payload);
 
         // Receive a request from the SSI process inbox
         sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, (unsigned int)&payload, 0);
         // pcb_t *sender = receive_request(&payload);
 
-        klog_print("payload service code: ");
-        klog_print_dec((unsigned int)payload.service_code);
-        klog_print("payload arg addr: ");
-        klog_print_hex((unsigned int)payload.arg);
+        // klog_print("payload service code: ");
+        // klog_print_dec((unsigned int)payload.service_code);
+        // klog_print("payload arg addr: ");
+        // klog_print_hex((unsigned int)payload.arg);
 
-        klog_print(" handling ssi request ");
+        // klog_print(" handling ssi request ");
         SSIRequest(sender, payload.service_code, payload.arg);
     }
 }
