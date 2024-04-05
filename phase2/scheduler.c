@@ -101,12 +101,13 @@ void scheduler()
         // if the Process Count is 1 and the SSI is the only process in the system, invoke HALT
         if (process_count == 1)
         {
+            klog_print(" EVVIVA!");
             HALT();
         }
         // if the Process Count > 1 and the Soft-block Count > 0 enter a Wait State
         if (process_count > 1 && softBlock_count > 0)
         {
-            klog_print(" Wait State ");
+            klog_print(" WAIT STATE ");
             // enable interrupts and disable PLT: we are waiting for a device interrupt
             setSTATUS((getSTATUS() | IECON | IMON) & ~TEBITON);
             WAIT();

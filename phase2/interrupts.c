@@ -89,12 +89,6 @@ static unsigned int getDevBitmap(int line)
  */
 static void devInterruptReturn(unsigned int status, unsigned int *command)
 {
-    ssi_do_io_t doio = {
-        .commandAddr = (memaddr *)command,
-        .commandValue = *command};
-    ssi_payload_t msg_pl = {
-        .service_code = DOIO,
-        .arg = &doio};
     // save off the status code
     unsigned int status_code = status;
     // acknowledge the outstanding interrupt
@@ -110,10 +104,18 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
     In this case, simply return control to the Current Process*/
     if (waiting_pcb != NULL)
     {
-        // send the status code message and unblock the PCB waiting the status response from this device
+        ssi_payload_t payload = {
+            .service_code = DOIO,
+            .arg = waiting_pcb,
+        };
+        // send the status code message to the SSI
         insertProcQ(&blocked_proc[SEMDEVLEN], waiting_pcb);
-        SendMessage(waiting_pcb, &status_code);
         softBlock_count--;
+
+        pcb_t *tmp = current_process;
+        current_process = NULL;
+        SendMessage(ssi_pcb, (unsigned int*)&payload);
+        current_process = tmp;
         // Place the stored off status code in the newly unblocked PCB’s v0 register
         waiting_pcb->p_s.reg_v0 = status_code;
     }

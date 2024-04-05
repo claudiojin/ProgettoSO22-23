@@ -11,9 +11,9 @@ pcb_t *receive_request(ssi_payload_t *payload_address)
 }
 
 // As the SSI, send a response back after executing a service
-void send_response(pcb_t *sender, void *response)
+void send_response(pcb_t *destination, void *response)
 {
-    SYSCALL(SENDMESSAGE, (unsigned int)sender, (unsigned int)response, 0);
+    SYSCALL(SENDMESSAGE, (unsigned int)destination, (unsigned int)response, 0);
 }
 
 // create a new process, progeny of the sender
@@ -59,16 +59,18 @@ void TerminateProcess(pcb_t *process)
     process_count--;
     outChild(process);
 
-    // remove process from ready queue (if necessary)
+    // remove process from ready queue
     outProcQ(&ready_queue, process);
 
-    // remove process from blocked list (if necessary)
-    for (int i = 0; i < DEVNUM; i++)
+    // remove from general blocked list
+    outProcQ(&blocked_proc[SEMDEVLEN], process);
+
+    // remove process from blocked list
+    for (int i = 0; i < SEMDEVLEN; i++)
     {
-        if (searchInList(process, &blocked_proc[i]) == process)
+        if (outProcQ(&blocked_proc[i], process) == process)
         {
             softBlock_count--;
-            outProcQ(&blocked_proc[i], process);
         }
     }
 
@@ -98,17 +100,23 @@ void terminate_process_service(pcb_t *sender, pcb_t *target_process)
     }
 }
 
-void DoIO_service(pcb_t *sender, ssi_do_io_t *arg)
+void DOIO_IN(pcb_t *sender, ssi_do_io_t *arg)
 {
     int index = getIODeviceIndex((memaddr)arg->commandAddr);
-
     // take the pcb from the general purpose list and put it in the right blocked_proc list
     outProcQ(&blocked_proc[SEMDEVLEN], sender);
     insertProcQ(&blocked_proc[index], sender);
     softBlock_count++;
     *arg->commandAddr = arg->commandValue;
-    // the instruction above should rise an interrupt exception which will handle the unblocking
-    // of the requesting pcb and send it the device response
+    // the instruction above should rise an interrupt exception which will send the device response back to the ssi
+}
+
+void DOIO_OUT(pcb_t *waiting_pcb) {
+    // the device sends to the SSI a message with the status of the device operation, i.e. setting the a3
+    // parameter with the device addres
+    // return the doio request status code to the requesting process
+    unsigned int status_code = waiting_pcb->p_s.reg_v0;
+    send_response(waiting_pcb, &status_code);
 }
 
 int get_cpu_time(pcb_t *sender)
@@ -166,7 +174,10 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
         break;
     case DOIO:
         klog_print("DOIO");
-        DoIO_service(sender, (ssi_do_io_PTR)arg);
+        if (sender != NULL)
+            DOIO_IN(sender, (ssi_do_io_PTR)arg);
+        else 
+            DOIO_OUT((pcb_PTR)arg);
         // response is handled in the device interrupt Handler
         break;
     case GETTIME:
@@ -212,7 +223,7 @@ void SSI_server()
     {
         pcb_t *sender = NULL;
         ssi_payload_t payload;
-        
+
         // klog_print("payload address: ");
         // klog_print_hex((unsigned int)&payload);
 
