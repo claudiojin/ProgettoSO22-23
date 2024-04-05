@@ -112,9 +112,8 @@ void DOIO_IN(pcb_t *sender, ssi_do_io_t *arg)
 }
 
 void DOIO_OUT(pcb_t *waiting_pcb) {
-    // the device sends to the SSI a message with the status of the device operation, i.e. setting the a3
-    // parameter with the device addres
     // return the doio request status code to the requesting process
+    ssi_pcb->p_s.reg_a3 ^= 0;
     unsigned int status_code = waiting_pcb->p_s.reg_v0;
     send_response(waiting_pcb, &status_code);
 }
@@ -128,6 +127,7 @@ int get_cpu_time(pcb_t *sender)
 // blocks the sender on the Interval Timer list
 void wait_for_clock_service(pcb_t *sender)
 {
+    // TODO: controllare su tutte le liste
     outProcQ(&ready_queue, sender);
     insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
     softBlock_count++;
@@ -174,11 +174,10 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
         break;
     case DOIO:
         klog_print("DOIO");
-        if (sender != NULL)
-            DOIO_IN(sender, (ssi_do_io_PTR)arg);
-        else 
+        if ((unsigned int)sender >= DEV_REG_START && (unsigned int)sender < END_DEVREG)
             DOIO_OUT((pcb_PTR)arg);
-        // response is handled in the device interrupt Handler
+        else 
+            DOIO_IN(sender, (ssi_do_io_PTR)arg);
         break;
     case GETTIME:
         klog_print("get time");

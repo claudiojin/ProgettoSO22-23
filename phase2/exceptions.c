@@ -16,11 +16,12 @@ void uTLB_RefillHandler()
 
 /**
  * This system call causes the transmission of a message to a specified process. This is an asynchronous operation
- * @param p destination process
+ * @param destination destination process
  * @param payload payload of the message to send: either a char*, an ssi_payload_t* or 0
+ * @param sender sender process
  * @returns 0 when successful, -2 when the pcb is not available, default error is -1
  */
-int SendMessage(pcb_t *p, unsigned int *payload)
+int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
 {
     // In case of SYS1 or non-blocking SYS2, the PC must be incremented by 4
     // (i.e. the μMPS3 wordsize, constant WORDLEN) prior to returning control
@@ -28,7 +29,7 @@ int SendMessage(pcb_t *p, unsigned int *payload)
     PROCSTATE->pc_epc += WORDLEN;
 
     klog_print(" SENDMESSAGE ");
-    if (p == NULL)
+    if (destination == NULL)
     {
         klog_print("destination process passed is null");
         return MSGNOGOOD;
@@ -40,12 +41,12 @@ int SendMessage(pcb_t *p, unsigned int *payload)
         return MSGNOGOOD;
 
     klog_print(" destination address: ");
-    klog_print_hex((unsigned int)p);
+    klog_print_hex((unsigned int)destination);
 
-    message->m_sender = current_process;
+    message->m_sender = sender;
 
     // payload handling
-    if (p == ssi_pcb) {
+    if (destination == ssi_pcb) {
         ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload; 
         message->ssi_payload.service_code = cast_payload->service_code;
         message->ssi_payload.arg = cast_payload->arg;
@@ -55,7 +56,7 @@ int SendMessage(pcb_t *p, unsigned int *payload)
         klog_print(" ssi payload arg: ");
         klog_print_hex((unsigned int)message->ssi_payload.arg);
     }
-    else if (current_process == ssi_pcb) {
+    else if (sender == ssi_pcb) {
         message->m_payload = *payload;
     }
     else {
@@ -63,28 +64,28 @@ int SendMessage(pcb_t *p, unsigned int *payload)
     }
 
     // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
-    if (searchInList(p, NULL) == p)
+    if (searchInList(destination, NULL) == destination)
     {
         klog_print("target process is in pcbfree list");
         return DEST_NOT_EXIST;
     }
     
     // search in the ready queue or current process
-    if (p == current_process || searchInList(p, &ready_queue) == p)
+    if (destination == current_process || searchInList(destination, &ready_queue) == destination)
     {
         klog_print("pcb found in ready queue or pcb is current process");
-        pushMessage(&p->msg_inbox, message);
+        pushMessage(&destination->msg_inbox, message);
         return 0;
     }
     // search in the blocked lists
     for (int i = 0; i < DEVNUM; i++)
     {
-        if (searchInList(p, &blocked_proc[i]) == p)
+        if (searchInList(destination, &blocked_proc[i]) == destination)
         {
             klog_print("pcb found in blocked list number: ");
             klog_print_dec((unsigned int)i);
-            readyProcess(p, i);
-            pushMessage(&p->msg_inbox, message);
+            readyProcess(destination, i);
+            pushMessage(&destination->msg_inbox, message);
             return 0;
         }
     }
@@ -223,7 +224,7 @@ void systemCallHandler()
     switch (SYSTEMCALL_CODE)
     {
     case SENDMESSAGE:
-        PROCSTATE->reg_v0 = (unsigned int)SendMessage((pcb_t *)PROCSTATE->reg_a1, (unsigned int *)PROCSTATE->reg_a2);
+        PROCSTATE->reg_v0 = (unsigned int)SendMessage((pcb_t *)PROCSTATE->reg_a1, (unsigned int *)PROCSTATE->reg_a2, current_process);
         break;
     case RECEIVEMESSAGE:
         PROCSTATE->reg_v0 = (unsigned int)ReceiveMessage((pcb_t *)PROCSTATE->reg_a1, (unsigned int *)PROCSTATE->reg_a2);

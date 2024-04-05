@@ -112,10 +112,10 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
         insertProcQ(&blocked_proc[SEMDEVLEN], waiting_pcb);
         softBlock_count--;
 
-        pcb_t *tmp = current_process;
-        current_process = NULL;
-        SendMessage(ssi_pcb, (unsigned int*)&payload);
-        current_process = tmp;
+        // the device sends to the SSI a message with the status of the device operation, i.e. setting the a3
+        // parameter with the device addres
+        SendMessage(ssi_pcb, (unsigned int*)&payload, (pcb_PTR)command);
+        
         // Place the stored off status code in the newly unblocked PCB’s v0 register
         waiting_pcb->p_s.reg_v0 = status_code;
     }
