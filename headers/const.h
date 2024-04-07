@@ -203,9 +203,6 @@
 /* Inizio indirizzo di device registers */
 #define START_DEVREG		0x10000054
 
-/* Fine indirizzo di device registers (più uno) */
-#define END_DEVREG          0x100002D4
-
 /* Macro per accesso allo status field dei terminal registers*/
 #define TERMINAL_STATUS(status) (status & 0b11111111)
 

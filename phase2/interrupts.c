@@ -55,15 +55,28 @@ static void ITHandler()
     // Acknowledge the interrupt by loading the Interval Timer with a new value: 100 milliseconds
     LDIT(PSECOND);
     
+    static struct list_head clock_list;
+    mkEmptyProcQ(&clock_list);
+
     // Unblock all PCBs blocked waiting a Pseudo-clock tick
     pcb_t *pos = NULL;
     while ((pos = removeProcQ(&blocked_proc[SEMDEVLEN - 1])) != NULL)
     {
-        klog_print("awakening IT process");
-        readyProcess(pos, SEMDEVLEN - 1);
+        insertProcQ(&clock_list, pos);
+        klog_print("unblocking IT process");
         softBlock_count--;
     }
     mkEmptyProcQ(&blocked_proc[SEMDEVLEN - 1]);
+
+    if (!emptyProcQ(&clock_list))
+    {
+        ssi_payload_t payload = {
+            .service_code = CLOCKWAIT,
+            .arg = &clock_list,
+        };
+
+        SendMessage(ssi_pcb, (unsigned int *)&payload, (pcb_PTR)INTERVALTMR);
+    }
 
     interruptHandlerExit();
 }

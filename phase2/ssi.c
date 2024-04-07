@@ -125,12 +125,29 @@ int get_cpu_time(pcb_t *sender)
 }
 
 // blocks the sender on the Interval Timer list
-void wait_for_clock_service(pcb_t *sender)
+void WaitForClock_IN(pcb_t *sender)
 {
-    // TODO: controllare su tutte le liste
-    outProcQ(&ready_queue, sender);
-    insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
-    softBlock_count++;
+    // ready state
+    if (outProcQ(&ready_queue, sender) != NULL) {
+        insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
+        softBlock_count++;
+    }
+
+    // blocked state
+    if (outProcQ(&blocked_proc[SEMDEVLEN], sender)) {
+        insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
+        softBlock_count++;
+    }
+}
+
+void WaitForClock_OUT(struct list_head *clock_list) {
+    pcb_t *pos = NULL;
+    while ((pos = removeProcQ(clock_list)) != NULL)
+    {
+        klog_print("awakening IT process");
+        insertProcQ(&blocked_proc[SEMDEVLEN], pos);
+        send_response(pos, NULL);
+    }
 }
 
 // GetSupportData service
@@ -174,7 +191,7 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
         break;
     case DOIO:
         klog_print("DOIO");
-        if ((unsigned int)sender >= DEV_REG_START && (unsigned int)sender < END_DEVREG)
+        if ((unsigned int)sender >= DEV_REG_START && (unsigned int)sender < DEV_REG_END)
             DOIO_OUT((pcb_PTR)arg);
         else 
             DOIO_IN(sender, (ssi_do_io_PTR)arg);
@@ -188,9 +205,10 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
         break;
     case CLOCKWAIT:
         klog_print("clock wait");
-        wait_for_clock_service(sender);
-
-        send_response(sender, NULL);
+        if ((unsigned int)sender == INTERVALTMR)
+            WaitForClock_OUT((struct list_head*)arg);
+        else
+            WaitForClock_IN(sender);
         break;
     case GETSUPPORTPTR:
         klog_print("get support");
@@ -223,19 +241,9 @@ void SSI_server()
         pcb_t *sender = NULL;
         ssi_payload_t payload;
 
-        // klog_print("payload address: ");
-        // klog_print_hex((unsigned int)&payload);
-
         // Receive a request from the SSI process inbox
         sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, (unsigned int)&payload, 0);
-        // pcb_t *sender = receive_request(&payload);
 
-        // klog_print("payload service code: ");
-        // klog_print_dec((unsigned int)payload.service_code);
-        // klog_print("payload arg addr: ");
-        // klog_print_hex((unsigned int)payload.arg);
-
-        // klog_print(" handling ssi request ");
         SSIRequest(sender, payload.service_code, payload.arg);
     }
 }

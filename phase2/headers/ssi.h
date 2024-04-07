@@ -29,6 +29,8 @@ void terminate_process_service(pcb_t* sender, pcb_t* target_process);
 // Get the CPU time for the sender process
 int get_cpu_time(pcb_t* sender);
 
+void WaitForClock_IN(pcb_t *sender);
+
 // GetSupportData service
 support_t* get_support_data(pcb_t* sender);
 
