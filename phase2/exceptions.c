@@ -40,8 +40,10 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     if (message == NULL)
         return MSGNOGOOD;
 
-    klog_print(" destination address: ");
+    klog_print(" Dest Adrr: ");
     klog_print_hex((unsigned int)destination);
+    klog_print(" Msg Addr: ");
+    klog_print_hex((unsigned int)message);
 
     message->m_sender = sender;
 
@@ -53,8 +55,6 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
         
         klog_print(" ssi service code: ");
         klog_print_hex(message->ssi_payload.service_code);
-        klog_print(" ssi payload arg: ");
-        klog_print_hex((unsigned int)message->ssi_payload.arg);
     }
     else if (sender == ssi_pcb) {
         message->m_payload = *payload;
@@ -73,22 +73,19 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     // search in the ready queue or current process
     if (destination == current_process || searchInList(destination, &ready_queue) == destination)
     {
-        klog_print("pcb found in ready queue or pcb is current process");
+        klog_print("Pcb running or ready");
         pushMessage(&destination->msg_inbox, message);
         return 0;
     }
-    // search in the blocked lists
-    for (int i = 0; i < DEVNUM; i++)
+    // search in the blocked list
+    if (searchInList(destination, &blocked_proc[SEMDEVLEN]) == destination)
     {
-        if (searchInList(destination, &blocked_proc[i]) == destination)
-        {
-            klog_print("pcb found in blocked list number: ");
-            klog_print_dec((unsigned int)i);
-            readyProcess(destination, i);
-            pushMessage(&destination->msg_inbox, message);
-            return 0;
-        }
+        klog_print("Pcb in blocked list");
+        readyProcess(destination, SEMDEVLEN);
+        pushMessage(&destination->msg_inbox, message);
+        return 0;
     }
+
     // if we could not find the receiver for some reason return the default error
     return MSGNOGOOD;
 }
@@ -138,8 +135,6 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
             cast_payload->arg = msg_extracted->ssi_payload.arg;
             klog_print(" ssi service code: ");
             klog_print_hex(cast_payload->service_code);
-            klog_print(" ssi payload arg: ");
-            klog_print_hex((unsigned int)cast_payload->arg);
         }
         else if (msg_extracted->string_payload != NULL)
         {
@@ -157,6 +152,8 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
 
     pcb_PTR extracted_sender = msg_extracted->m_sender;
     freeMsg(msg_extracted);
+    klog_print("Msg Sender: ");
+    klog_print_hex((unsigned int)extracted_sender);
     return extracted_sender;
 }
 

@@ -17,7 +17,7 @@ pcb_t* receive_request(ssi_payload_t *payload_address);
 void send_response(pcb_t* sender, void* response) ;
 
 // Create a new process, progeny of the sender
-pcb_t *create_process_service(pcb_t* sender, ssi_create_process_t* args);
+void create_process_service(pcb_t* sender, ssi_create_process_t* args);
 
 // Cause the sender or another process to terminate, included all of the progeny
 void TerminateProcess(pcb_t* process);
@@ -27,15 +27,15 @@ void TerminateProcess(pcb_t* process);
 void terminate_process_service(pcb_t* sender, pcb_t* target_process);
 
 // Get the CPU time for the sender process
-int get_cpu_time(pcb_t* sender);
+void get_cpu_time(pcb_t* sender);
 
 void WaitForClock_IN(pcb_t *sender);
 
 // GetSupportData service
-support_t* get_support_data(pcb_t* sender);
+void get_support_data(pcb_t* sender);
 
 // GetProcessID service
-int get_process_id(pcb_t* sender, int arg);
+void get_process_id(pcb_t* sender, int arg);
 
 //SSI basic server algorithm (implements the RPC)
 void SSI_server();

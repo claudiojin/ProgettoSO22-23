@@ -5,8 +5,6 @@ pcb_t *receive_request(ssi_payload_t *payload_address)
 {
     pcb_PTR sender = NULL;
     sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, (unsigned int)payload_address, 0);
-    klog_print("arg: ");
-    klog_print_hex((unsigned int)payload_address->arg);
     return sender;
 }
 
@@ -17,7 +15,7 @@ void send_response(pcb_t *destination, void *response)
 }
 
 // create a new process, progeny of the sender
-pcb_t *create_process_service(pcb_t *sender, ssi_create_process_t *args)
+void create_process_service(pcb_t *sender, ssi_create_process_t *args)
 {
     // Allocate a new PCB
     pcb_t *new_process = allocPcb();
@@ -32,18 +30,18 @@ pcb_t *create_process_service(pcb_t *sender, ssi_create_process_t *args)
     new_process->p_s = *(args->state);
     new_process->p_supportStruct = args->support;
 
-    // Add the new process to the Ready Queue
-    insertProcQ(&ready_queue, new_process);
-
     process_count++;
 
-    // Add the new process as a child of the current process
-    insertChild(current_process, new_process);
+    // Add the new process as a child of the sender process
+    insertChild(sender, new_process);
 
     // Initialize p_time to zero
     new_process->p_time = 0;
 
-    return new_process;
+    // Add the new process to the Ready Queue
+    insertProcQ(&ready_queue, new_process);
+
+    send_response(sender, &new_process);
 }
 
 // Cause the sender or another process to terminate, included all of the
@@ -98,10 +96,12 @@ void terminate_process_service(pcb_t *sender, pcb_t *target_process)
         // Terminate target process and its progeny
         TerminateProcess(target_process);
     }
+    send_response(sender, NULL);
 }
 
 void DOIO_IN(pcb_t *sender, ssi_do_io_t *arg)
 {
+    klog_print("DOIO IN");
     int index = getIODeviceIndex((memaddr)arg->commandAddr);
     // take the pcb from the general purpose list and put it in the right blocked_proc list
     outProcQ(&blocked_proc[SEMDEVLEN], sender);
@@ -112,21 +112,24 @@ void DOIO_IN(pcb_t *sender, ssi_do_io_t *arg)
 }
 
 void DOIO_OUT(pcb_t *waiting_pcb) {
+    klog_print("DOIO OUT");
     // return the doio request status code to the requesting process
     ssi_pcb->p_s.reg_a3 ^= 0;
     unsigned int status_code = waiting_pcb->p_s.reg_v0;
     send_response(waiting_pcb, &status_code);
 }
 
-int get_cpu_time(pcb_t *sender)
+void get_cpu_time(pcb_t *sender)
 {
     sender->p_time += IntervalTOD();
-    return sender->p_time;
+    // Send back CPU time as a response
+    send_response(sender, &sender->p_time);
 }
 
 // blocks the sender on the Interval Timer list
 void WaitForClock_IN(pcb_t *sender)
 {
+    klog_print("CLOCKWAIT IN");
     // ready state
     if (outProcQ(&ready_queue, sender) != NULL) {
         insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
@@ -141,6 +144,7 @@ void WaitForClock_IN(pcb_t *sender)
 }
 
 void WaitForClock_OUT(struct list_head *clock_list) {
+    klog_print("CLOCKWAIT OUT");
     pcb_t *pos = NULL;
     while ((pos = removeProcQ(clock_list)) != NULL)
     {
@@ -151,24 +155,28 @@ void WaitForClock_OUT(struct list_head *clock_list) {
 }
 
 // GetSupportData service
-support_t *get_support_data(pcb_t *sender)
+void get_support_data(pcb_t *sender)
 {
-    return sender->p_supportStruct;
+    // Send the Support Structure back as a response
+    send_response(sender, &sender->p_supportStruct);
 }
 
 // GetProcessID service
-int get_process_id(pcb_t *sender, int arg)
+void get_process_id(pcb_t *sender, int arg)
 {
+    int process_id = 0;
     if (arg == 0)
     {
-        // return sender's PID
-        return (sender->p_pid);
+        // sender's PID
+        process_id = sender->p_pid;
     }
     else
     {
-        // return sender's parent's PID (given its existence)
-        return ((sender->p_parent != NULL) ? sender->p_parent->p_pid : 0);
+        // sender's parent's PID (given its existence)
+        process_id = (sender->p_parent != NULL) ? sender->p_parent->p_pid : 0;
     }
+    // Send back pid as a response
+    send_response(sender, &process_id);
 }
 
 // Process the incoming request
@@ -179,18 +187,13 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
     {
     case CREATEPROCESS:
         klog_print("create");
-        pcb_t *child_process = create_process_service(sender, (ssi_create_process_PTR)arg);
-
-        send_response(sender, &child_process);
+        create_process_service(sender, (ssi_create_process_PTR)arg);
         break;
     case TERMPROCESS:
         klog_print("terminate");
         terminate_process_service(sender, (pcb_PTR)arg);
-
-        send_response(sender, NULL);
         break;
     case DOIO:
-        klog_print("DOIO");
         if ((unsigned int)sender >= DEV_REG_START && (unsigned int)sender < DEV_REG_END)
             DOIO_OUT((pcb_PTR)arg);
         else 
@@ -199,12 +202,9 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
     case GETTIME:
         klog_print("get time");
         // Get the CPU time for the sender process
-        int cpu_time = get_cpu_time(sender);
-        // Send back CPU time as a response
-        send_response(sender, &cpu_time);
+        get_cpu_time(sender);
         break;
     case CLOCKWAIT:
-        klog_print("clock wait");
         if ((unsigned int)sender == INTERVALTMR)
             WaitForClock_OUT((struct list_head*)arg);
         else
@@ -213,16 +213,12 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
     case GETSUPPORTPTR:
         klog_print("get support");
         // Get the Support Structure for the sender process
-        support_t *support_data = get_support_data(sender);
-        // Send the Support Structure back as a response
-        send_response(sender, support_data);
+        get_support_data(sender);
         break;
     case GETPROCESSID:
         klog_print("get pid");
         // Get the pid based on the argument
-        int process_id = get_process_id(sender, (int)arg);
-        // Send back pid as a response
-        send_response(sender, &process_id);
+        get_process_id(sender, (int)arg);
         break;
     // Handle other services if needed
     default:
@@ -242,7 +238,7 @@ void SSI_server()
         ssi_payload_t payload;
 
         // Receive a request from the SSI process inbox
-        sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, (unsigned int)&payload, 0);
+        sender = receive_request(&payload);
 
         SSIRequest(sender, payload.service_code, payload.arg);
     }

@@ -165,7 +165,6 @@ pcb_t *create_process(state_t *s)
         .service_code = CREATEPROCESS,
         .arg = &ssi_create_process,
     };
-    
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&payload, 0);
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&p), 0);
     return p;
@@ -183,7 +182,7 @@ void test()
     // test send and receive
     SYSCALL(SENDMESSAGE, (unsigned int)test_pcb, 0, 0);
     pcb_PTR sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-    
+
     if (sender != test_pcb)
         PANIC();
 
