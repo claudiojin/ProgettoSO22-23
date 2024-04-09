@@ -26,17 +26,20 @@ void create_process_service(pcb_t *sender, ssi_create_process_t *args)
         send_response(sender, (int *)&ret);
     }
 
+    klog_print("NEW PROC ADDR: ");
+    klog_print_hex((unsigned int)new_process);
+
+    process_count++;
+
     // Initialize PCB fields
     new_process->p_s = *(args->state);
     new_process->p_supportStruct = args->support;
 
-    process_count++;
+    // New process has yet to accumulate cpu time
+    new_process->p_time = 0;
 
     // Add the new process as a child of the sender process
     insertChild(sender, new_process);
-
-    // Initialize p_time to zero
-    new_process->p_time = 0;
 
     // Add the new process to the Ready Queue
     insertProcQ(&ready_queue, new_process);
@@ -137,7 +140,7 @@ void WaitForClock_IN(pcb_t *sender)
     }
 
     // blocked state
-    if (outProcQ(&blocked_proc[SEMDEVLEN], sender)) {
+    if (outProcQ(&blocked_proc[SEMDEVLEN], sender) != NULL) {
         insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
         softBlock_count++;
     }
