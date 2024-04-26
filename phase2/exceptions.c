@@ -74,7 +74,7 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     if (destination == current_process || searchInList(destination, &ready_queue) == destination)
     {
         klog_print("Pcb running or ready");
-        pushMessage(&destination->msg_inbox, message);
+        insertMessage(&destination->msg_inbox, message);
         return 0;
     }
     // search in the blocked list
@@ -82,7 +82,7 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     {
         klog_print("Pcb in blocked list");
         readyProcess(destination, SEMDEVLEN);
-        pushMessage(&destination->msg_inbox, message);
+        insertMessage(&destination->msg_inbox, message);
         return 0;
     }
 

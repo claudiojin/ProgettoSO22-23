@@ -55,7 +55,6 @@ static void ITHandler()
     // Acknowledge the interrupt by loading the Interval Timer with a new value: 100 milliseconds
     LDIT(PSECOND);
     
-    static struct list_head clock_list;
     mkEmptyProcQ(&clock_list);
 
     // Unblock all PCBs blocked waiting a Pseudo-clock tick

@@ -117,7 +117,6 @@ void DOIO_IN(pcb_t *sender, ssi_do_io_t *arg)
 void DOIO_OUT(pcb_t *waiting_pcb) {
     klog_print("DOIO OUT");
     // return the doio request status code to the requesting process
-    ssi_pcb->p_s.reg_a3 ^= 0;
     unsigned int status_code = waiting_pcb->p_s.reg_v0;
     send_response(waiting_pcb, &status_code);
 }
@@ -197,6 +196,8 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
         terminate_process_service(sender, (pcb_PTR)arg);
         break;
     case DOIO:
+        // klog_print("DOIO Sender: ");
+        // klog_print_hex((unsigned int)sender);
         if ((unsigned int)sender >= DEV_REG_START && (unsigned int)sender < DEV_REG_END)
             DOIO_OUT((pcb_PTR)arg);
         else 
