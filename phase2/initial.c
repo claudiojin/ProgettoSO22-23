@@ -12,7 +12,6 @@ int softBlock_count;
 struct list_head ready_queue;
 pcb_t *current_process;
 struct list_head blocked_proc[DEVNUM];
-struct list_head clock_list;
 pcb_t *ssi_pcb;
 
 // pointer to process 0 pass up vector memory location

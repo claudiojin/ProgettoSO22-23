@@ -43,14 +43,10 @@ pcb_t *searchInList(pcb_t *p, struct list_head *list)
     if (list_empty(head))
         return NULL;
     
-    int i = 0;
     list_for_each_entry(pos, head, p_list)
     {
-        // klog_print("dentro al for: ");
-        // klog_print_dec((unsigned int)i);
         if (pos == p)
             return pos;
-        i++;
     }
     return NULL;
 }
@@ -237,7 +233,7 @@ void insertChild(pcb_t *prnt, pcb_t *p)
 */
 pcb_t *removeChild(pcb_t *p)
 {
-    if (p == NULL || emptyProcQ(&p->p_child))
+    if (p == NULL || emptyChild(p))
         return NULL;
     else
     {

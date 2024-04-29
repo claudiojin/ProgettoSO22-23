@@ -55,27 +55,19 @@ static void ITHandler()
     // Acknowledge the interrupt by loading the Interval Timer with a new value: 100 milliseconds
     LDIT(PSECOND);
     
-    mkEmptyProcQ(&clock_list);
-
     // Unblock all PCBs blocked waiting a Pseudo-clock tick
     pcb_t *pos = NULL;
     while ((pos = removeProcQ(&blocked_proc[SEMDEVLEN - 1])) != NULL)
     {
-        insertProcQ(&clock_list, pos);
+        insertProcQ(&blocked_proc[SEMDEVLEN], pos);
         klog_print("unblocking IT process");
+        
+        SendMessage(pos, NULL, (pcb_PTR)ssi_pcb);
+        
         softBlock_count--;
     }
+
     mkEmptyProcQ(&blocked_proc[SEMDEVLEN - 1]);
-
-    if (!emptyProcQ(&clock_list))
-    {
-        ssi_payload_t payload = {
-            .service_code = CLOCKWAIT,
-            .arg = &clock_list,
-        };
-
-        SendMessage(ssi_pcb, (unsigned int *)&payload, (pcb_PTR)INTERVALTMR);
-    }
 
     interruptHandlerExit();
 }
@@ -107,7 +99,7 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
     *command = ACK;
 
     int index = getIODeviceIndex((memaddr)command);
-    // TODO: scansione della lista cercando il payload giusto. In teoria l'operazione è sincrona quindi appena
+    // TODO: scansione della lista cercando il pcb giusto. In teoria l'operazione è sincrona quindi appena
     // il pcb viene bloccato sulla lista del device richiesto dall'ssi si genera un interrupt
     pcb_t *waiting_pcb = removeProcQ(&blocked_proc[index]);
 
@@ -116,17 +108,12 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
     In this case, simply return control to the Current Process*/
     if (waiting_pcb != NULL)
     {
-        ssi_payload_t payload = {
-            .service_code = DOIO,
-            .arg = waiting_pcb,
-        };
         // send the status code message to the SSI
         insertProcQ(&blocked_proc[SEMDEVLEN], waiting_pcb);
         softBlock_count--;
 
-        // the device sends to the SSI a message with the status of the device operation, i.e. setting the a3
-        // parameter with the device addres
-        SendMessage(ssi_pcb, (unsigned int*)&payload, (pcb_PTR)command);
+        // the device sends to the blocked process a message with the status of the device operation
+        SendMessage(waiting_pcb, (unsigned int*)&status_code, (pcb_PTR)ssi_pcb);
         
         // Place the stored off status code in the newly unblocked PCB’s v0 register
         waiting_pcb->p_s.reg_v0 = status_code;

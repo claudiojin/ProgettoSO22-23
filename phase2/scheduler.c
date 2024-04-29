@@ -99,7 +99,7 @@ void scheduler()
     if (current_process == NULL)
     {
         // if the Process Count is 1 and the SSI is the only process in the system, invoke HALT
-        if (process_count == 1)
+        if (process_count == 1 && headProcQ(&blocked_proc[SEMDEVLEN])->p_pid == 1)
         {
             klog_print(" EVVIVA!");
             HALT();

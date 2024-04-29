@@ -57,8 +57,9 @@ void TerminateProcess(pcb_t *process)
         PANIC();
     }
 
-    process_count--;
     outChild(process);
+
+    process_count--;
 
     // remove process from ready queue
     outProcQ(&ready_queue, process);
@@ -66,10 +67,10 @@ void TerminateProcess(pcb_t *process)
     // remove from general blocked list
     outProcQ(&blocked_proc[SEMDEVLEN], process);
 
-    // remove process from blocked list
+    // remove process from device blocked list
     for (int i = 0; i < SEMDEVLEN; i++)
     {
-        if (outProcQ(&blocked_proc[i], process) == process)
+        if (outProcQ(&blocked_proc[i], process))
         {
             softBlock_count--;
         }
@@ -102,23 +103,18 @@ void terminate_process_service(pcb_t *sender, pcb_t *target_process)
     send_response(sender, NULL);
 }
 
-void DOIO_IN(pcb_t *sender, ssi_do_io_t *arg)
+void DOIO_service(pcb_t *sender, ssi_do_io_t *arg)
 {
-    klog_print("DOIO IN");
     int index = getIODeviceIndex((memaddr)arg->commandAddr);
-    // take the pcb from the general purpose list and put it in the right blocked_proc list
+    // take the requesting pcb and put it in the right blocked_proc list
+    outProcQ(&ready_queue, sender);
     outProcQ(&blocked_proc[SEMDEVLEN], sender);
+
     insertProcQ(&blocked_proc[index], sender);
     softBlock_count++;
+    
     *arg->commandAddr = arg->commandValue;
-    // the instruction above should rise an interrupt exception which will send the device response back to the ssi
-}
-
-void DOIO_OUT(pcb_t *waiting_pcb) {
-    klog_print("DOIO OUT");
-    // return the doio request status code to the requesting process
-    unsigned int status_code = waiting_pcb->p_s.reg_v0;
-    send_response(waiting_pcb, &status_code);
+    // the instruction above should rise an interrupt exception which will send the device response back to the requesting process
 }
 
 void get_cpu_time(pcb_t *sender)
@@ -129,9 +125,8 @@ void get_cpu_time(pcb_t *sender)
 }
 
 // blocks the sender on the Interval Timer list
-void WaitForClock_IN(pcb_t *sender)
+void WaitForClock_service(pcb_t *sender)
 {
-    klog_print("CLOCKWAIT IN");
     // ready state
     if (outProcQ(&ready_queue, sender) != NULL) {
         insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
@@ -142,17 +137,6 @@ void WaitForClock_IN(pcb_t *sender)
     if (outProcQ(&blocked_proc[SEMDEVLEN], sender) != NULL) {
         insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
         softBlock_count++;
-    }
-}
-
-void WaitForClock_OUT(struct list_head *clock_list) {
-    klog_print("CLOCKWAIT OUT");
-    pcb_t *pos = NULL;
-    while ((pos = removeProcQ(clock_list)) != NULL)
-    {
-        klog_print("awakening IT process");
-        insertProcQ(&blocked_proc[SEMDEVLEN], pos);
-        send_response(pos, NULL);
     }
 }
 
@@ -196,12 +180,8 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
         terminate_process_service(sender, (pcb_PTR)arg);
         break;
     case DOIO:
-        // klog_print("DOIO Sender: ");
-        // klog_print_hex((unsigned int)sender);
-        if ((unsigned int)sender >= DEV_REG_START && (unsigned int)sender < DEV_REG_END)
-            DOIO_OUT((pcb_PTR)arg);
-        else 
-            DOIO_IN(sender, (ssi_do_io_PTR)arg);
+        klog_print("DOIO");
+        DOIO_service(sender, (ssi_do_io_PTR)arg);
         break;
     case GETTIME:
         klog_print("get time");
@@ -209,10 +189,8 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
         get_cpu_time(sender);
         break;
     case CLOCKWAIT:
-        if ((unsigned int)sender == INTERVALTMR)
-            WaitForClock_OUT((struct list_head*)arg);
-        else
-            WaitForClock_IN(sender);
+        klog_print("CLOCKWAIT");
+        WaitForClock_service(sender);
         break;
     case GETSUPPORTPTR:
         klog_print("get support");

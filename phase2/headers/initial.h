@@ -47,8 +47,6 @@ extern pcb_t *current_process;
  * + general purpose blocked list[49]
  */
 extern struct list_head blocked_proc[DEVNUM];
-// list of newly unblocked processes on the Interval Timer
-extern struct list_head clock_list;
 // Global variable to represent SSI process
 extern pcb_t *ssi_pcb;
 

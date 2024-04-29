@@ -23,11 +23,6 @@ void uTLB_RefillHandler()
  */
 int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
 {
-    // In case of SYS1 or non-blocking SYS2, the PC must be incremented by 4
-    // (i.e. the μMPS3 wordsize, constant WORDLEN) prior to returning control
-    // to the interrupted execution stream
-    PROCSTATE->pc_epc += WORDLEN;
-
     klog_print(" SENDMESSAGE ");
     if (destination == NULL)
     {
@@ -39,6 +34,13 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
 
     if (message == NULL)
         return MSGNOGOOD;
+
+    // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
+    if (searchInList(destination, NULL) == destination)
+    {
+        klog_print("TARGET PROCESS IS IN PCB FREE LIST");
+        return DEST_NOT_EXIST;
+    }
 
     klog_print(" Dest Adrr: ");
     klog_print_hex((unsigned int)destination);
@@ -61,13 +63,6 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     }
     else {
         message->string_payload = (char *)payload;
-    }
-
-    // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
-    if (searchInList(destination, NULL) == destination)
-    {
-        klog_print("target process is in pcbfree list");
-        return DEST_NOT_EXIST;
     }
     
     // search in the ready queue or current process
@@ -144,11 +139,6 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
             *payload = msg_extracted->m_payload;
         }
     }
-
-    // In case of SYS1 or non-blocking SYS2, the PC must be incremented by 4
-    // (i.e. the μMPS3 wordsize, constant WORDLEN) prior to returning control
-    // to the interrupted execution stream
-    PROCSTATE->pc_epc += WORDLEN;
 
     pcb_PTR extracted_sender = msg_extracted->m_sender;
     freeMsg(msg_extracted);
@@ -233,6 +223,11 @@ void systemCallHandler()
         syscallProgramTrap();
         break;
     }
+
+    // In case of SYS1 or non-blocking SYS2, the PC must be incremented by 4
+    // (i.e. the μMPS3 wordsize, constant WORDLEN) prior to returning control
+    // to the interrupted execution stream
+    PROCSTATE->pc_epc += WORDLEN;
 
     LDST(PROCSTATE);
 }

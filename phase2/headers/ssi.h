@@ -7,35 +7,8 @@
  * This module implements the System Service Interface.
  */
 
-// Standard procedure to be called by processes to make service requests
-void SSIRequest(pcb_t* sender, int service, void* arg);
-
-// Receive a message as the SSI
-pcb_t* receive_request(ssi_payload_t *payload_address);
-
-// As the SSI, send back a response after a service
-void send_response(pcb_t* sender, void* response) ;
-
-// Create a new process, progeny of the sender
-void create_process_service(pcb_t* sender, ssi_create_process_t* args);
-
 // Cause the sender or another process to terminate, included all of the progeny
 void TerminateProcess(pcb_t* process);
-
-// Expansion of the previous function, to distinguish between sender termination
-// and other cases. If target is NULL, sender is the process chosen for termination.
-void terminate_process_service(pcb_t* sender, pcb_t* target_process);
-
-// Get the CPU time for the sender process
-void get_cpu_time(pcb_t* sender);
-
-void WaitForClock_IN(pcb_t *sender);
-
-// GetSupportData service
-void get_support_data(pcb_t* sender);
-
-// GetProcessID service
-void get_process_id(pcb_t* sender, int arg);
 
 //SSI basic server algorithm (implements the RPC)
 void SSI_server();
