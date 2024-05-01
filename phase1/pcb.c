@@ -5,19 +5,21 @@ LIST_HEAD(pcbFree_h);
 static int next_pid = 1;
 
 /*
-    Initialize the pcbFree list to contain all the elements of the static array of MAXPROC PCBs.
-    This method will be called only once during data structure initialization.
+    Resets all the fields of the pcb provided
 */
-void initPcbs()
+void __resetPcb(pcb_t *p)
 {
-    // should be a useless initialization, LIST_HEAD macro has taken care of that
-    // INIT_LIST_HEAD(&pcbFree_h);
-
-    // using the "p_list" field of pcb_t to link the PCBs
-    for (int i = 0; i < MAXPROC; i++)
-    {
-        list_add(&pcbTable[i].p_list, &pcbFree_h);
-    }
+    INIT_LIST_HEAD(&(p->p_list));
+    p->p_parent = NULL;
+    INIT_LIST_HEAD(&(p->p_child));
+    p->p_sib.next = NULL;
+    p->p_sib.prev = NULL;
+    p->p_time = 0;
+    INIT_LIST_HEAD(&p->msg_inbox);
+    p->p_supportStruct = NULL;
+    // assign an ID to the new process
+    p->p_s.entry_hi = p->p_pid = next_pid;
+    next_pid++;
 }
 
 /**
@@ -52,6 +54,19 @@ pcb_t *searchInList(pcb_t *p, struct list_head *list)
 }
 
 /*
+    Initialize the pcbFree list to contain all the elements of the static array of MAXPROC PCBs.
+    This method will be called only once during data structure initialization.
+*/
+void initPcbs()
+{
+    // using the "p_list" field of pcb_t to link the PCBs
+    for (int i = 0; i < MAXPROC; i++)
+    {
+        list_add(&pcbTable[i].p_list, &pcbFree_h);
+    }
+}
+
+/*
     Insert the element pointed to by p onto the pcbFree list.
 */
 void freePcb(pcb_t *p)
@@ -61,25 +76,6 @@ void freePcb(pcb_t *p)
     {
         list_add(&p->p_list, &pcbFree_h);
     }
-}
-
-/*
-    Resets all the fields of the pcb provided
-*/
-void __resetPcb(pcb_t *p)
-{
-    INIT_LIST_HEAD(&(p->p_list));
-    p->p_parent = NULL;
-    INIT_LIST_HEAD(&(p->p_child));
-    p->p_sib.next = NULL;
-    p->p_sib.prev = NULL;
-    // subject to change in phase 2
-    p->p_time = 0;
-    INIT_LIST_HEAD(&p->msg_inbox);
-    p->p_supportStruct = NULL;
-    // assign an ID to the new process
-    p->p_s.entry_hi = p->p_pid = next_pid;
-    next_pid++;
 }
 
 /*
@@ -208,10 +204,7 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 */
 int emptyChild(pcb_t *p)
 {
-    if (emptyProcQ(&(p->p_child)))
-        return TRUE;
-    else
-        return FALSE;
+    return emptyProcQ(&(p->p_child));
 }
 
 /*
@@ -237,19 +230,8 @@ pcb_t *removeChild(pcb_t *p)
         return NULL;
     else
     {
-        // first element of the list
         struct list_head *tmp = p->p_child.next;
-        // multiple children
-        if (tmp != &p->p_child)
-        {
-            list_del(tmp);
-        }
-        // only child
-        else
-        {
-            list_del(tmp);
-            INIT_LIST_HEAD(&p->p_child);
-        }
+        list_del(tmp);
         return container_of(tmp, pcb_t, p_sib);
     }
 }

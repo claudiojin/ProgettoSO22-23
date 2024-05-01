@@ -24,10 +24,8 @@ void create_process_service(pcb_t *sender, ssi_create_process_t *args)
     {
         int ret = NOPROC;
         send_response(sender, (int *)&ret);
+        return;
     }
-
-    klog_print("NEW PROC ADDR: ");
-    klog_print_hex((unsigned int)new_process);
 
     process_count++;
 
@@ -40,6 +38,11 @@ void create_process_service(pcb_t *sender, ssi_create_process_t *args)
 
     // Add the new process as a child of the sender process
     insertChild(sender, new_process);
+
+    klog_print("NEW PROC ADDR: ");
+    klog_print_hex((unsigned int)new_process);
+    klog_print(", NEW PROC Parent: ");
+    klog_print_hex((unsigned int)new_process->p_parent);
 
     // Add the new process to the Ready Queue
     insertProcQ(&ready_queue, new_process);
@@ -70,18 +73,23 @@ void TerminateProcess(pcb_t *process)
     // remove process from device blocked list
     for (int i = 0; i < SEMDEVLEN; i++)
     {
-        if (outProcQ(&blocked_proc[i], process))
+        if (outProcQ(&blocked_proc[i], process) != NULL)
         {
             softBlock_count--;
+            break;
         }
     }
 
     pcb_t *child;
     while ((child = removeChild(process)) != NULL)
     {
+        if (process->p_child.next == &process->p_child)
+        {
+            klog_print("LISTA DEI FIGLI VUOTA!");
+        }
         TerminateProcess(child);
     }
-
+    
     freePcb(process);
 }
 

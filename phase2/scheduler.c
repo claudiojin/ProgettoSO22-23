@@ -122,7 +122,7 @@ void scheduler()
     // ready queue has at least one process
     else
     {
-        klog_print("dispatching...\n");
+        klog_print("dispatching...");
         // remember to enable PLT for every running process
         current_process->p_s.status = (current_process->p_s.status) | TEBITON;
         // load PLT

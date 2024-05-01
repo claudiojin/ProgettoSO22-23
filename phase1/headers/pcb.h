@@ -8,7 +8,6 @@
 
 void initPcbs();
 pcb_t *searchInList(pcb_t *p, struct list_head *head);
-pcb_t *findPcbIORequest();
 void freePcb(pcb_t *p);
 pcb_t *allocPcb();
 void mkEmptyProcQ(struct list_head *head);
