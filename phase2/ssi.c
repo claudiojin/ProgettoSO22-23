@@ -89,8 +89,11 @@ void TerminateProcess(pcb_t *process)
     
     klog_print("KILLING PROCESS: ");
     klog_print_hex((unsigned int)process);
-
-    freePcb(process);
+    
+    // If the process hasn't already been killed, kill it
+    if (searchInList(process, NULL) == NULL){
+        freePcb(process);
+    }
 }
 
 // Expansion of previous function, to distinguish between sender termination
