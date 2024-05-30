@@ -30,11 +30,15 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
         return MSGNOGOOD;
     }
 
+    klog_print(" DESTINATION: ");
+    klog_print_hex((unsigned int)destination);
+
     msg_t *message = allocMsg();
 
     if (message == NULL)
         return MSGNOGOOD;
 
+    klog_print("CHECKING pcbFree_h list");
     // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
     if (searchInList(destination, NULL) == destination)
     {
@@ -64,7 +68,7 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     else {
         message->string_payload = (char *)payload;
     }
-    
+    klog_print("CHECKING ready queue");
     // search in the ready queue or current process
     if (destination == current_process || searchInList(destination, &ready_queue) == destination)
     {
@@ -72,6 +76,7 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
         insertMessage(&destination->msg_inbox, message);
         return 0;
     }
+    klog_print("CHECKING general blocked list");
     // search in the blocked list
     if (searchInList(destination, &blocked_proc[SEMDEVLEN]) == destination)
     {
@@ -103,7 +108,7 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
     if (sender == ANYMESSAGE)
     {
         msg_extracted = popMessage(&current_process->msg_inbox, NULL);
-        // klog_print(" any message extracted: ");
+        klog_print(" any message extracted: ");
         // klog_print_hex((unsigned int)msg_extracted);
     }
     // search for the specified message

@@ -50,4 +50,6 @@ extern struct list_head blocked_proc[DEVNUM];
 // Global variable to represent SSI process
 extern pcb_t *ssi_pcb;
 
+extern void memcpy(void *dest, void *src, size_tt n);
+
 #endif

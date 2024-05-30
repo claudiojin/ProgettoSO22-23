@@ -20,7 +20,7 @@ passupvector_t *passupvector;
 // function provided by the p2test.c file
 extern void test();
 
-void memcpy(void *dest, const void *src, size_tt n)
+void memcpy(void *dest, void *src, size_tt n)
 {
     for (size_tt i = 0; i < n; i++)
     {

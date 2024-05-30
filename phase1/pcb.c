@@ -12,8 +12,7 @@ void __resetPcb(pcb_t *p)
     INIT_LIST_HEAD(&(p->p_list));
     p->p_parent = NULL;
     INIT_LIST_HEAD(&(p->p_child));
-    p->p_sib.next = NULL;
-    p->p_sib.prev = NULL;
+    INIT_LIST_HEAD(&(p->p_sib));
     p->p_time = 0;
     INIT_LIST_HEAD(&p->msg_inbox);
     p->p_supportStruct = NULL;
@@ -33,7 +32,7 @@ pcb_t *searchInList(pcb_t *p, struct list_head *list)
 {
     if (p == NULL)
         return NULL;
-    
+
     pcb_t *pos;
     struct list_head *head;
 
@@ -44,7 +43,7 @@ pcb_t *searchInList(pcb_t *p, struct list_head *list)
 
     if (list_empty(head))
         return NULL;
-    
+
     list_for_each_entry(pos, head, p_list)
     {
         if (pos == p)
@@ -187,7 +186,7 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p)
 
     // general case
     struct pcb_t *pos = NULL;
-    
+
     list_for_each_entry(pos, head, p_list)
     {
         if (pos == p)
@@ -230,9 +229,13 @@ pcb_t *removeChild(pcb_t *p)
         return NULL;
     else
     {
-        struct list_head *tmp = p->p_child.next;
-        list_del(tmp);
-        return container_of(tmp, pcb_t, p_sib);
+        // tmp points to the first child
+        pcb_t *tmp = container_of(p->p_child.next, pcb_t, p_sib);
+        // remove first child from the list of the siblings an make it no longer child of its parent
+        list_del(&tmp->p_sib);
+        tmp->p_parent = NULL;
+
+        return tmp;
     }
 }
 
@@ -247,16 +250,8 @@ pcb_t *outChild(pcb_t *p)
         return NULL;
     else
     {
-        // left brother
-        struct list_head *tmp = p->p_sib.prev;
-        // pcb to remove is the first brother
-        if (tmp == &p->p_parent->p_child)
-            return removeChild(p->p_parent);
-        // general case
-        else
-        {
-            list_del(&p->p_sib);
-            return p;
-        }
+        list_del(&p->p_sib);
+        p->p_parent = NULL;
+        return p;
     }
 }

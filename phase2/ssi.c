@@ -31,6 +31,7 @@ void create_process_service(pcb_t *sender, ssi_create_process_t *args)
 
     // Initialize PCB fields
     new_process->p_s = *(args->state);
+    // memcpy(&(new_process->p_s), (args->state), sizeof (state_t));
     new_process->p_supportStruct = args->support;
 
     // New process has yet to accumulate cpu time
@@ -83,13 +84,12 @@ void TerminateProcess(pcb_t *process)
     pcb_t *child;
     while ((child = removeChild(process)) != NULL)
     {
-        if (process->p_child.next == &process->p_child)
-        {
-            klog_print("LISTA DEI FIGLI VUOTA!");
-        }
         TerminateProcess(child);
     }
     
+    klog_print("KILLING PROCESS: ");
+    klog_print_hex((unsigned int)process);
+
     freePcb(process);
 }
 
@@ -120,7 +120,7 @@ void DOIO_service(pcb_t *sender, ssi_do_io_t *arg)
 
     insertProcQ(&blocked_proc[index], sender);
     softBlock_count++;
-    
+
     *arg->commandAddr = arg->commandValue;
     // the instruction above should rise an interrupt exception which will send the device response back to the requesting process
 }
@@ -136,13 +136,15 @@ void get_cpu_time(pcb_t *sender)
 void WaitForClock_service(pcb_t *sender)
 {
     // ready state
-    if (outProcQ(&ready_queue, sender) != NULL) {
+    if (outProcQ(&ready_queue, sender) != NULL)
+    {
         insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
         softBlock_count++;
     }
 
     // blocked state
-    if (outProcQ(&blocked_proc[SEMDEVLEN], sender) != NULL) {
+    if (outProcQ(&blocked_proc[SEMDEVLEN], sender) != NULL)
+    {
         insertProcQ(&blocked_proc[SEMDEVLEN - 1], sender);
         softBlock_count++;
     }
