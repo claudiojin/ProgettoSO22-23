@@ -23,22 +23,17 @@ void uTLB_RefillHandler()
  */
 int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
 {
-    klog_print(" SENDMESSAGE ");
     if (destination == NULL)
     {
         // klog_print("destination process passed is null");
         return MSGNOGOOD;
     }
 
-    klog_print(" DESTINATION: ");
-    klog_print_hex((unsigned int)destination);
-
     msg_t *message = allocMsg();
 
     if (message == NULL)
         return MSGNOGOOD;
 
-    klog_print("CHECKING pcbFree_h list");
     // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
     if (searchInList(destination, NULL) == destination)
     {
@@ -46,41 +41,33 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
         return DEST_NOT_EXIST;
     }
 
-    // klog_print(" Dest Adrr: ");
-    // klog_print_hex((unsigned int)destination);
-    // klog_print(" Msg Addr: ");
-    // klog_print_hex((unsigned int)message);
-
     message->m_sender = sender;
 
     // payload handling
-    if (destination == ssi_pcb) {
-        ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload; 
+    if (destination == ssi_pcb)
+    {
+        ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
         message->ssi_payload.service_code = cast_payload->service_code;
         message->ssi_payload.arg = cast_payload->arg;
-        
-        // klog_print(" ssi service code: ");
-        // klog_print_hex(message->ssi_payload.service_code);
     }
-    else if (sender == ssi_pcb) {
+    else if (sender == ssi_pcb)
+    {
         message->m_payload = *payload;
     }
-    else {
+    else
+    {
         message->string_payload = (char *)payload;
     }
-    klog_print("CHECKING ready queue");
+
     // search in the ready queue or current process
     if (destination == current_process || searchInList(destination, &ready_queue) == destination)
     {
-        // klog_print("Pcb running or ready");
         insertMessage(&destination->msg_inbox, message);
         return 0;
     }
-    klog_print("CHECKING general blocked list");
     // search in the blocked list
     if (searchInList(destination, &blocked_proc[SEMDEVLEN]) == destination)
     {
-        // klog_print("Pcb in blocked list");
         readyProcess(destination, SEMDEVLEN);
         insertMessage(&destination->msg_inbox, message);
         return 0;
@@ -101,27 +88,20 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
  */
 pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
 {
-    klog_print(" RECEIVEMESSAGE ");
-    
     msg_t *msg_extracted = NULL;
     // extract the first message from the requesting process inbox
     if (sender == ANYMESSAGE)
     {
         msg_extracted = popMessage(&current_process->msg_inbox, NULL);
-        klog_print(" any message extracted: ");
-        // klog_print_hex((unsigned int)msg_extracted);
     }
     // search for the specified message
     else
     {
         msg_extracted = popMessage(&current_process->msg_inbox, sender);
-        // klog_print(" message extracted: ");
-        // klog_print_hex((unsigned int)msg_extracted);
     }
     // wait for the specified message
     if (msg_extracted == NULL)
     {
-        klog_print(" blocking process ");
         blockProcess(PROCSTATE, SEMDEVLEN);
     }
     // update the payload if needed
@@ -130,25 +110,22 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
         if (current_process == ssi_pcb)
         {
             ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
-            
+
             cast_payload->service_code = msg_extracted->ssi_payload.service_code;
             cast_payload->arg = msg_extracted->ssi_payload.arg;
-            klog_print(" ssi service code: ");
-            klog_print_hex(cast_payload->service_code);
         }
         else if (msg_extracted->string_payload != NULL)
         {
             *payload = (unsigned int)msg_extracted->string_payload;
         }
-        else {
+        else
+        {
             *payload = msg_extracted->m_payload;
         }
     }
 
     pcb_PTR extracted_sender = msg_extracted->m_sender;
     freeMsg(msg_extracted);
-    klog_print("Msg Sender: ");
-    klog_print_hex((unsigned int)extracted_sender);
     return extracted_sender;
 }
 
@@ -163,13 +140,11 @@ void passUpOrDie(int index)
 {
     if (current_process->p_supportStruct == NULL)
     {
-        klog_print("Die portion");
         TerminateProcess(current_process);
         scheduler();
     }
     else
     {
-        klog_print("Pass Up portion");
         // Copy the saved exception state from the BIOS Data Page to the correct sup_exceptState field
         // of the Current Process
         current_process->p_supportStruct->sup_exceptState[index] = *PROCSTATE;
@@ -200,7 +175,6 @@ void systemCallHandler()
     // an interrupted execution stream is restarted, the stack is popped.
     if ((PROCSTATE->status & USERPON) != 0)
     {
-        klog_print("syscall chiamata in user mode");
         syscallProgramTrap();
     }
 
@@ -209,7 +183,6 @@ void systemCallHandler()
     // handler should perform a standard Pass Up or Die operation using the GENERALEXCEPT index value
     if (SYSTEMCALL_CODE >= 1)
     {
-        klog_print("syscall code >= 1");
         passUpOrDie(GENERALEXCEPT);
     }
 
@@ -223,8 +196,6 @@ void systemCallHandler()
         break;
     default:
         // invalid system call code
-        klog_print(" invalid syscall code: ");
-        klog_print_dec((unsigned int)SYSTEMCALL_CODE);
         syscallProgramTrap();
         break;
     }
@@ -243,7 +214,6 @@ void exceptionHandler()
     {
     // Interrupt
     case (0):
-        klog_print("interrupt");
         interruptHandler();
         break;
 
@@ -253,7 +223,6 @@ void exceptionHandler()
     case (3):
         // The Nucleus TLB exception handler should perform a standard Pass Up or Die operation using
         // the PGFAULTEXCEPT index value
-        klog_print("tlb exc");
         passUpOrDie(PGFAULTEXCEPT);
         break;
 
@@ -266,7 +235,6 @@ void exceptionHandler()
     case (10):
     case (11):
     case (12):
-        klog_print("trap");
         // The Nucleus Program Trap exception handler should perform a standard Pass Up or Die operation
         // using the GENERALEXCEPT index value
         passUpOrDie(GENERALEXCEPT);
@@ -274,7 +242,6 @@ void exceptionHandler()
 
     // System call
     case (8):
-        klog_print("syscall");
         systemCallHandler();
         break;
     }

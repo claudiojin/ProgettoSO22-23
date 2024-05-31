@@ -7,7 +7,6 @@
 #include "./exceptions.h"
 #include "./ssi.h"
 #include "./interrupts.h"
-#include "../../klog.h"
 #include "../../phase1/headers/pcb.h"
 #include "../../phase1/headers/msg.h"
 #include <umps3/umps/cp0.h>

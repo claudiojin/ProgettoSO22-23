@@ -40,11 +40,6 @@ void create_process_service(pcb_t *sender, ssi_create_process_t *args)
     // Add the new process as a child of the sender process
     insertChild(sender, new_process);
 
-    klog_print("NEW PROC ADDR: ");
-    klog_print_hex((unsigned int)new_process);
-    klog_print(", NEW PROC Parent: ");
-    klog_print_hex((unsigned int)new_process->p_parent);
-
     // Add the new process to the Ready Queue
     insertProcQ(&ready_queue, new_process);
 
@@ -57,41 +52,40 @@ void TerminateProcess(pcb_t *process)
 {
     if (process == ssi_pcb)
     {
-        klog_print("SSI PCB KILLED!");
         PANIC();
     }
 
-    outChild(process);
-
-    process_count--;
-
-    // remove process from ready queue
-    outProcQ(&ready_queue, process);
-
-    // remove from general blocked list
-    outProcQ(&blocked_proc[SEMDEVLEN], process);
-
-    // remove process from device blocked list
-    for (int i = 0; i < SEMDEVLEN; i++)
+    // If the process hasn't already been killed, kill it. This is to prevent the case when a child
+    // manages to send a terminate service request on itself, after the parent has already been killed
+    if (searchInList(process, NULL) == NULL)
     {
-        if (outProcQ(&blocked_proc[i], process) != NULL)
+
+        outChild(process);
+
+        process_count--;
+
+        // remove process from ready queue
+        outProcQ(&ready_queue, process);
+
+        // remove from general blocked list
+        outProcQ(&blocked_proc[SEMDEVLEN], process);
+
+        // remove process from device blocked list
+        for (int i = 0; i < SEMDEVLEN; i++)
         {
-            softBlock_count--;
-            break;
+            if (outProcQ(&blocked_proc[i], process) != NULL)
+            {
+                softBlock_count--;
+                break;
+            }
         }
-    }
 
-    pcb_t *child;
-    while ((child = removeChild(process)) != NULL)
-    {
-        TerminateProcess(child);
-    }
-    
-    klog_print("KILLING PROCESS: ");
-    klog_print_hex((unsigned int)process);
-    
-    // If the process hasn't already been killed, kill it
-    if (searchInList(process, NULL) == NULL){
+        pcb_t *child;
+        while ((child = removeChild(process)) != NULL)
+        {
+            TerminateProcess(child);
+        }
+
         freePcb(process);
     }
 }
@@ -128,6 +122,7 @@ void DOIO_service(pcb_t *sender, ssi_do_io_t *arg)
     // the instruction above should rise an interrupt exception which will send the device response back to the requesting process
 }
 
+// Get the CPU time for the sender process
 void get_cpu_time(pcb_t *sender)
 {
     sender->p_time += IntervalTOD();
@@ -153,14 +148,14 @@ void WaitForClock_service(pcb_t *sender)
     }
 }
 
-// GetSupportData service
+// Get the Support Structure for the sender process
 void get_support_data(pcb_t *sender)
 {
     // Send the Support Structure back as a response
     send_response(sender, &sender->p_supportStruct);
 }
 
-// GetProcessID service
+// Get the pid based on the argument
 void get_process_id(pcb_t *sender, int arg)
 {
     int process_id = 0;
@@ -185,39 +180,28 @@ void SSIRequest(pcb_t *sender, int service, void *arg)
     switch (service)
     {
     case CREATEPROCESS:
-        klog_print("create");
         create_process_service(sender, (ssi_create_process_PTR)arg);
         break;
     case TERMPROCESS:
-        klog_print("terminate");
         terminate_process_service(sender, (pcb_PTR)arg);
         break;
     case DOIO:
-        klog_print("DOIO");
         DOIO_service(sender, (ssi_do_io_PTR)arg);
         break;
     case GETTIME:
-        klog_print("get time");
-        // Get the CPU time for the sender process
         get_cpu_time(sender);
         break;
     case CLOCKWAIT:
-        klog_print("CLOCKWAIT");
         WaitForClock_service(sender);
         break;
     case GETSUPPORTPTR:
-        klog_print("get support");
-        // Get the Support Structure for the sender process
         get_support_data(sender);
         break;
     case GETPROCESSID:
-        klog_print("get pid");
-        // Get the pid based on the argument
         get_process_id(sender, (int)arg);
         break;
     // Handle other services if needed
     default:
-        klog_print("default: kill process");
         // Invalid service code, terminate the process and its progeny
         TerminateProcess(sender);
     }

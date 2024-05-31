@@ -13,7 +13,7 @@ static void interruptHandlerExit()
 {
     setSTATUS(getSTATUS() | TEBITON); // enable PLT
     IntervalTOD();
-    
+
     // Return control to the Current Process: Perform a LDST on the saved exception state
     if (current_process != NULL)
     {
@@ -54,16 +54,15 @@ static void ITHandler()
 {
     // Acknowledge the interrupt by loading the Interval Timer with a new value: 100 milliseconds
     LDIT(PSECOND);
-    
+
     // Unblock all PCBs blocked waiting a Pseudo-clock tick
     pcb_t *pos = NULL;
     while ((pos = removeProcQ(&blocked_proc[SEMDEVLEN - 1])) != NULL)
     {
         insertProcQ(&blocked_proc[SEMDEVLEN], pos);
-        klog_print("unblocking IT process");
-        
+
         SendMessage(pos, NULL, (pcb_PTR)ssi_pcb);
-        
+
         softBlock_count--;
     }
 
@@ -113,8 +112,8 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
         softBlock_count--;
 
         // the device sends to the blocked process a message with the status of the device operation
-        SendMessage(waiting_pcb, (unsigned int*)&status_code, (pcb_PTR)ssi_pcb);
-        
+        SendMessage(waiting_pcb, (unsigned int *)&status_code, (pcb_PTR)ssi_pcb);
+
         // Place the stored off status code in the newly unblocked PCB’s v0 register
         waiting_pcb->p_s.reg_v0 = status_code;
     }
@@ -201,13 +200,11 @@ void interruptHandler()
     // Line 1 (PLT)
     if ((ip & LOCALTIMERINT) != 0)
     {
-        klog_print("PLT");
         PLTHandler();
     }
     // Line 2 (IT)
     else if ((ip & TIMERINTERRUPT) != 0)
     {
-        klog_print("IT");
         ITHandler();
     }
     // Line 3
@@ -237,7 +234,6 @@ void interruptHandler()
     }
     else
     {
-        klog_print("Exiting interrupt handler");
         interruptHandlerExit();
     }
 }

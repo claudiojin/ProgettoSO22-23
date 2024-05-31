@@ -19,8 +19,6 @@
 #include "../headers/types.h"
 #include <umps/libumps.h>
 
-#include "../klog.h"
-
 typedef unsigned int devregtr;
 
 /* hardware constants */

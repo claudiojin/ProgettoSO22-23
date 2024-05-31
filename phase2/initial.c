@@ -44,8 +44,6 @@ void init_ssi()
     // insert new initialized process in Ready Queue
     insertProcQ(&ready_queue, ssi_pcb); // ready_queue is the sentinel of the queue
     process_count++;
-    klog_print("ssi_pcb: ");
-    klog_print_hex((unsigned int)ssi_pcb);
 }
 
 // instantiates the test process in the Ready Queue
@@ -66,8 +64,6 @@ void init_test()
     // insert new initialized process in Ready Queue
     insertProcQ(&ready_queue, test_pcb); // ready_queue is the sentinel of the queue
     process_count++;
-    klog_print(" test_pcb: ");
-    klog_print_hex((unsigned int)test_pcb);
 }
 
 int main()
@@ -91,7 +87,7 @@ int main()
     current_process = NULL;
     for (int i = 0; i < DEVNUM; i++)
         mkEmptyProcQ(&blocked_proc[i]);
-    
+
     // initialize Interval Timer device with 100ms
     LDIT(PSECOND);
     // Formula used: time scale = #clock_ticks in (10^-6)s[1/us], time slice[us]

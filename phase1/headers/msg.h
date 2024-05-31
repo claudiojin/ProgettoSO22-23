@@ -4,7 +4,6 @@
 #include "../../headers/const.h"
 #include "../../headers/types.h"
 #include "../../headers/listx.h"
-#include "../../klog.h"
 
 void initMsgs();
 void freeMsg(msg_t *m);

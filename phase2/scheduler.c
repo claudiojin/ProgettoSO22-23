@@ -81,10 +81,6 @@ int getIODeviceIndex(memaddr cmdAddr)
     }
     index = (int)((register_addr - DEV_REG_START) / DEV_REG_SIZE) + offset;
 
-    klog_print(" cmdAddr: ");
-    klog_print_hex(cmdAddr);
-    klog_print(" Dev Index: ");
-    klog_print_dec((unsigned int)index);
     return index;
 }
 
@@ -92,8 +88,6 @@ void scheduler()
 {
     // get the first process in the ready queue
     current_process = removeProcQ(&ready_queue);
-    klog_print(" current process: ");
-    klog_print_hex((unsigned int)current_process);
 
     // ready queue is empty
     if (current_process == NULL)
@@ -101,13 +95,11 @@ void scheduler()
         // if the Process Count is 1 and the SSI is the only process in the system, invoke HALT
         if (process_count == 1 && headProcQ(&blocked_proc[SEMDEVLEN])->p_pid == 1)
         {
-            klog_print(" EVVIVA!");
             HALT();
         }
         // if the Process Count > 1 and the Soft-block Count > 0 enter a Wait State
         if (process_count > 1 && softBlock_count > 0)
         {
-            klog_print(" WAIT STATE ");
             // enable interrupts and disable PLT: we are waiting for a device interrupt
             setSTATUS((getSTATUS() | IECON | IMON) & ~TEBITON);
             WAIT();
@@ -115,14 +107,12 @@ void scheduler()
         // Deadlock for μPandOS is defined as when the Process Count > 0 and the Soft-block Count is 0
         if (process_count > 0 && softBlock_count == 0)
         {
-            klog_print(" DEADLOCK ");            
             PANIC();
         }
     }
     // ready queue has at least one process
     else
     {
-        klog_print("dispatching...");
         // remember to enable PLT for every running process
         current_process->p_s.status = (current_process->p_s.status) | TEBITON;
         // load PLT
