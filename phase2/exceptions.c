@@ -25,7 +25,6 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
 {
     if (destination == NULL)
     {
-        // klog_print("destination process passed is null");
         return MSGNOGOOD;
     }
 
@@ -37,7 +36,6 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
     if (searchInList(destination, NULL) == destination)
     {
-        // klog_print("TARGET PROCESS IS IN PCB FREE LIST");
         return DEST_NOT_EXIST;
     }
 

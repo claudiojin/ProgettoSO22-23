@@ -9,7 +9,7 @@
 
 #include <umps/const.h>
 
-/* Number of semaphore's device */
+/* Number of device lists */
 #define SEMDEVLEN 49  // (4 device * 8 sub-device) + (8 terminals * 2)  + 1 (for pseudo clock support) = 49
 #define DEVNUM    SEMDEVLEN + 1 // 49 device + 1 general purpose
 #define RECVD     5

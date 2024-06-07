@@ -34,8 +34,7 @@ static void PLTHandler()
 {
     // Ack PLT
     setTIMER((cpu_t)TIMESLICE * (*((cpu_t *)TIMESCALEADDR)));
-    // klog_print("PLT timer value: ");
-    // klog_print_hex(curr_time);
+    
     updateProcessCPUTime();
     current_process->p_s = *PROCSTATE;
 
@@ -98,8 +97,6 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
     *command = ACK;
 
     int index = getIODeviceIndex((memaddr)command);
-    // TODO: scansione della lista cercando il pcb giusto. In teoria l'operazione è sincrona quindi appena
-    // il pcb viene bloccato sulla lista del device richiesto dall'ssi si genera un interrupt
     pcb_t *waiting_pcb = removeProcQ(&blocked_proc[index]);
 
     /*it is possible that there isn’t any PCB waiting for this device. This can happen if
