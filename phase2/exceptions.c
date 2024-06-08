@@ -41,7 +41,7 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
 
     message->m_sender = sender;
 
-    // payload handling
+    // payload handling, for now these are the types of messages we deal with, might change in phase 3
     if (destination == ssi_pcb)
     {
         ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
@@ -122,8 +122,10 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
         }
     }
 
+    // free the message and return the sender
     pcb_PTR extracted_sender = msg_extracted->m_sender;
     freeMsg(msg_extracted);
+
     return extracted_sender;
 }
 

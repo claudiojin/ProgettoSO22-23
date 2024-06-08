@@ -23,7 +23,8 @@ void __resetPcb(pcb_t *p)
 
 /**
  * Returns the pcb pointed to by p ONLY if it is in the list pointed to by list, NULL otherwise
- * If list is NULL, search through the pcbFree_h list
+ * If list is NULL, search through the pcbFree_h list. We could also add a boolean in the pcb to indicate if its free or not,
+ * maybe in phase 3.
  * @param p pcb to search
  * @param list list where we search the pcb
  * @return pcb p, or NULL if it wasn't found in list

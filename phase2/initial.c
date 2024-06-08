@@ -20,6 +20,7 @@ passupvector_t *passupvector;
 // function provided by the p2test.c file
 extern void test();
 
+// our memcpy, we use the size_tt type defined in listx.h
 void memcpy(void *dest, void *src, size_tt n)
 {
     for (size_tt i = 0; i < n; i++)

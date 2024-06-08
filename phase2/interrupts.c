@@ -7,7 +7,7 @@
 #include "./headers/interrupts.h"
 
 /**
- * @brief Gestisce l'uscita dall'interrupt handler.
+ * Handles exit from interrupt handler
  */
 static void interruptHandlerExit()
 {
@@ -28,7 +28,7 @@ static void interruptHandlerExit()
 }
 
 /**
- * @brief Gestore del Processor Local Timer.
+ * Processor Local Timer handler
  */
 static void PLTHandler()
 {
@@ -47,7 +47,7 @@ static void PLTHandler()
 }
 
 /**
- * @brief Gestore dell'Interval Timer.
+ * Interval Timer handler.
  */
 static void ITHandler()
 {
@@ -58,13 +58,14 @@ static void ITHandler()
     pcb_t *pos = NULL;
     while ((pos = removeProcQ(&blocked_proc[SEMDEVLEN - 1])) != NULL)
     {
+        // put the pcb inn the general purpose blocked list
         insertProcQ(&blocked_proc[SEMDEVLEN], pos);
-
+        // send the message directly to the pcb
         SendMessage(pos, NULL, (pcb_PTR)ssi_pcb);
 
         softBlock_count--;
     }
-
+    // make sure the list is empty
     mkEmptyProcQ(&blocked_proc[SEMDEVLEN - 1]);
 
     interruptHandlerExit();
@@ -85,9 +86,9 @@ static unsigned int getDevBitmap(int line)
 }
 
 /**
- * @brief Gestisce il valore di ritorno di un device.
- * @param status Puntatore al campo status del device.
- * @param command Puntatore al campo command del device.
+ * Handles the return value of a device.
+ * @param status Pointer to device status field.
+ * @param command Pointer to device command field.
  */
 static void devInterruptReturn(unsigned int status, unsigned int *command)
 {
@@ -117,9 +118,9 @@ static void devInterruptReturn(unsigned int status, unsigned int *command)
 }
 
 /**
- * @brief Gestore devices non terminali.
- * @param line Linea di interrupt.
- * @param device_number Numero del device.
+ * Handler of non terminal devices
+ * @param line Interrupt line.
+ * @param device_number Device number.
  */
 static void nonTerminalHandler(int line, int device_number)
 {
@@ -128,8 +129,8 @@ static void nonTerminalHandler(int line, int device_number)
 }
 
 /**
- * @brief Gestore dei terminali.
- * @param device_number Numero del device.
+ * Terminal handler.
+ * @param device_number Device number.
  */
 static void terminalHandler(int device_number)
 {
@@ -183,7 +184,7 @@ static void deviceHandler(int line)
  */
 void interruptHandler()
 {
-    // Il tempo di gestione degli interrupt non viene accumulato nel tempo CPU del processo corrente
+    // Interrupt handling time is not accumulated in the CPU time of current process
     if (current_process != NULL)
     {
         updateProcessCPUTime();
