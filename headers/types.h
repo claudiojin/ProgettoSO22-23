@@ -15,23 +15,26 @@ typedef signed int cpu_t;
 typedef unsigned int memaddr;
 
 /* Page Table Entry descriptor */
-typedef struct pteEntry_t {
+typedef struct pteEntry_t
+{
     unsigned int pte_entryHI;
     unsigned int pte_entryLO;
 } pteEntry_t;
 
 /* Support level context */
-typedef struct context_t {
+typedef struct context_t
+{
     unsigned int stackPtr;
     unsigned int status;
     unsigned int pc;
 } context_t;
 
 /* Support level descriptor */
-typedef struct support_t {
-    int        sup_asid;                        /* process ID					*/
-    state_t    sup_exceptState[2];              /* old state exceptions			*/
-    context_t  sup_exceptContext[2];            /* new contexts for passing up	*/
+typedef struct support_t
+{
+    int sup_asid;                               /* process ID					*/
+    state_t sup_exceptState[2];                 /* old state exceptions			*/
+    context_t sup_exceptContext[2];             /* new contexts for passing up	*/
     pteEntry_t sup_privatePgTbl[USERPGTBLSIZE]; /* user page table				*/
     struct list_head s_list;
 } support_t;
@@ -53,6 +56,20 @@ typedef struct ssi_do_io_t
     memaddr *commandAddr;
     unsigned int commandValue;
 } ssi_do_io_t, *ssi_do_io_PTR;
+
+typedef struct sst_print_t
+{
+    int length;
+    char *string;
+} sst_print_t, *sst_print_PTR;
+
+/* Page swap pool information structure type */
+typedef struct swap_t
+{
+    int sw_asid;        /* ASID number			*/
+    int sw_pageNo;      /* page's virt page no.	*/
+    pteEntry_t *sw_pte; /* page's PTE entry.	*/
+} swap_t;
 
 /* process table entry type */
 typedef struct pcb_t
@@ -89,7 +106,7 @@ typedef struct msg_t
     struct pcb_t *m_sender;
 
     /* the payload of the message */
-	unsigned int m_payload;
+    unsigned int m_payload;
 
     /* string payload */
     char *string_payload;

@@ -1,7 +1,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#include "phase1/headers/pcb.h"
+#include "../../phase1/headers/pcb.h"
 
 void klog_print(char *str);
 void klog_print_dec(unsigned int num);

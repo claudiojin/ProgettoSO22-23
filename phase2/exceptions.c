@@ -1,16 +1,39 @@
 #include "./headers/exceptions.h"
+#include "./headers/klog.h"
 
 /**
  * This module implements the TLB, Program Trap, and SYSCALL exception handlers.
- * Furthermore, this module will contain the provided skeleton TLB-Refill event
- * handler (e.g. uTLB_RefillHandler).
  */
 
 void uTLB_RefillHandler()
 {
-    setENTRYHI(0x80000000);
-    setENTRYLO(0x00000000);
+
+    // Determine the page number (denoted as p) of the missing TLB entry by inspecting EntryHi in
+    // the saved exception state located at the start of the BIOS Data Page.
+    unsigned int vpn = (0b1 << 19) + ENTRYHI_GET_VPN(getENTRYHI());
+
+    klog_print(" VPN: ");
+    klog_print_hex(getENTRYHI());
+
+    int page_number;
+    // The VPN field will be set to [0x80000..0x8001E] for the first 31 entries. The VPN for the stack
+    // page (Page Table entry 31) should be set to 0xBFFFF
+    if (vpn == 0xBFFFF)
+        page_number = 31;
+    else
+        page_number = vpn % 0x80000;
+
+    // Get the Page Table entry for page number p for the Current Process. This will be located in
+    // the Current Process’s Page Table, which is part of its Support Structure
+    pteEntry_t pt_entry = current_process->p_supportStruct->sup_privatePgTbl[page_number];
+
+    // Write this Page Table entry into the TLB. This is a three-set process
+    setENTRYHI(pt_entry.pte_entryHI);
+    setENTRYLO(pt_entry.pte_entryLO);
     TLBWR();
+
+    // Return control to the Current Process to retry the instruction that caused the TLB-Refill event:
+    // LDST on the saved exception state located at the start of the BIOS Data Page
     LDST(PROCSTATE);
 }
 

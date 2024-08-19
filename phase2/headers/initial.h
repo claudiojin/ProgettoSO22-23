@@ -46,6 +46,8 @@ extern pcb_t *current_process;
  * + general purpose blocked list[49]
  */
 extern struct list_head blocked_proc[DEVNUM];
+// Global variable to represent Test process
+extern pcb_t *test_pcb;
 // Global variable to represent SSI process
 extern pcb_t *ssi_pcb;
 

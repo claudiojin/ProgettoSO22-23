@@ -3,7 +3,7 @@
 # The filename can then be added to the .gitignore file to stop the file from being reintroduced in later commits.
 
 *.o
-kernel*
-term*
+kernel
+*.umps
 *.txt
 .vscode/

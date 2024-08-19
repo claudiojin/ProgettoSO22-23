@@ -12,12 +12,13 @@ int softBlock_count;
 struct list_head ready_queue;
 pcb_t *current_process;
 struct list_head blocked_proc[DEVNUM];
+pcb_t *test_pcb;
 pcb_t *ssi_pcb;
 
 // pointer to process 0 pass up vector memory location
 passupvector_t *passupvector;
 
-// function provided by the p2test.c file
+// function provided by the initProc.c file
 extern void test();
 
 // our memcpy, we use the size_tt type defined in listx.h
@@ -51,7 +52,7 @@ void init_ssi()
 void init_test()
 {
     state_t test_state;
-    pcb_t *test_pcb = allocPcb();
+    test_pcb = allocPcb();
     // bitwise OR on the status register, enabling interrupts, kernel mode and PLT
     test_state.status = ALLOFF | IEPON | IMON | TEBITON;
     // stack pointer set to ramtop - space_of_last_process
