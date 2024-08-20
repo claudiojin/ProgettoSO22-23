@@ -60,13 +60,13 @@ static void swap_mutex()
     if (curr_mutex_proc == NULL)
     {
         // receive request for mutual exclusion from a process
-        pcb_PTR sender = SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
+        pcb_PTR sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
         // send a message back to sender to notify it
-        SYSCALL(SENDMESSAGE, sender, 0, 0);
+        SYSCALL(SENDMESSAGE, (unsigned int)sender, 0, 0);
     }
     else
     {
-        SYSCALL(RECEIVEMESSAGE, curr_mutex_proc, 0, 0);
+        SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_mutex_proc, 0, 0);
         curr_mutex_proc = NULL;
     }
 };
@@ -229,8 +229,8 @@ static void loadPage(pteEntry_t *pt_entry, swap_t *frame)
 static void TLBInvalidHandler(support_t *support_structure)
 {
     // Gain mutual exclusion
-    SYSCALL(SENDMESSAGE, swap_mutex_proc, 0, 0);
-    SYSCALL(RECEIVEMESSAGE, swap_mutex_proc, 0, 0);
+    SYSCALL(SENDMESSAGE, (unsigned int)swap_mutex_proc, 0, 0);
+    SYSCALL(RECEIVEMESSAGE, (unsigned int)swap_mutex_proc, 0, 0);
 
     // Determine the missing page number (denoted as p): found in the saved exception state’s EntryHi
     int missing_page_index = getPageIndex(support_structure->sup_exceptState[PGFAULTEXCEPT].entry_hi);
@@ -247,7 +247,7 @@ static void TLBInvalidHandler(support_t *support_structure)
     loadPage(page_pt_entry, new_frame);
 
     // release mutual exclusion
-    SYSCALL(SENDMESSAGE, swap_mutex_proc, 0, 0);
+    SYSCALL(SENDMESSAGE, (unsigned int)swap_mutex_proc, 0, 0);
 
     LDST(&support_structure->sup_exceptState[PGFAULTEXCEPT]);
 }
@@ -257,7 +257,7 @@ static void TLBInvalidHandler(support_t *support_structure)
  */
 void TLBExceptionHandler()
 {
-    support_t *support_structure = getSupportPtr();
+    support_t *support_structure = GetSupportPtr();
 
     switch (CAUSE_GET_EXCCODE(support_structure->sup_exceptState[PGFAULTEXCEPT].cause))
     {
@@ -283,8 +283,8 @@ void TLBExceptionHandler()
 void freeFrames(int asid)
 {
     // Gain mutual exclusion
-    SYSCALL(SENDMESSAGE, swap_mutex_proc, 0, 0);
-    SYSCALL(RECEIVEMESSAGE, swap_mutex_proc, 0, 0);
+    SYSCALL(SENDMESSAGE, (unsigned int)swap_mutex_proc, 0, 0);
+    SYSCALL(RECEIVEMESSAGE, (unsigned int)swap_mutex_proc, 0, 0);
 
     for (int i = 0; i < POOLSIZE; i++)
     {
@@ -297,7 +297,7 @@ void freeFrames(int asid)
     }
 
     // Release mutual exclusion
-    SYSCALL(SENDMESSAGE, swap_mutex_proc, 0, 0);
+    SYSCALL(SENDMESSAGE, (unsigned int)swap_mutex_proc, 0, 0);
 }
 
 /**
@@ -347,7 +347,7 @@ void initSwapStructs()
     swap_mutex_state.status = EALLINTPLT; // all interrupts enabled + PLT enabled
 
     // create swap mutex process
-    swap_mutex_proc = CreateProcess(&swap_mutex_state);
+    swap_mutex_proc = CreateProcess(&swap_mutex_state, NULL);
 
     // initialize swap pool table
     for (int i = 0; i < POOLSIZE; i++)

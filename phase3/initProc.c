@@ -8,10 +8,8 @@ static support_t support_arr[UPROCMAX];
  * List of free support structs
  */
 static struct list_head free_support;
-/**
- * Current ASID value
- */
-static int asid = 1;
+
+int asid = 1;
 
 /**
  * Whenever a new Support Structure is needed to support a new U-proc, a call to allocate returns a pointer to a
@@ -54,7 +52,7 @@ static void initFreeSupportList()
 /**
  * @return address of a free frame that will be used as a stack.
  */
-static memaddr getStackFrame()
+memaddr getStackFrame()
 {
     static int curr_offset = 0;
     memaddr ram_top;
@@ -106,9 +104,9 @@ support_t *GetSupportPtr()
  */
 static void initSSTState(int asid, state_t *state)
 {
-    state->reg_t9 = state->pc_epc = SST_server;
+    state->reg_t9 = state->pc_epc = (memaddr)SST_server;
     state->reg_sp = getStackFrame();
-    state->status = EALLINTPLT; // all interrupts enabled + PLT enabled
+    state->status = ALLOFF | EALLINTPLT; // all interrupts enabled + PLT enabled
     state->entry_hi = (asid << ENTRYHI_ASID_BIT);
 }
 
@@ -119,7 +117,7 @@ static void initSSTState(int asid, state_t *state)
  */
 static void initUProcState(int asid, state_t *state)
 {
-    state->reg_t9 = state->pc_epc = 0x800000B0;
+    state->reg_t9 = state->pc_epc = (memaddr)0x800000B0;
     state->reg_sp = 0xC0000000;
     state->status = ALLOFF | IMON | IEPON | TEBITON | USERPON; // All interrupts enable + PLT enabled + User mode
     state->entry_hi = (asid << ENTRYHI_ASID_BIT);
@@ -171,7 +169,7 @@ static void startSSTs()
  * @param asid ASID of the U-proc to initialize.
  * @returns pcb of the User process just created.
  */
-static pcb_PTR startProcess(int asid)
+pcb_PTR startProcess(int asid)
 {
     state_t state;
     support_t *support_struct = allocate();
@@ -217,5 +215,5 @@ void test()
         signalProcessTermination();
     }
 
-    SYSCALL(TERMPROCESS, NULL, 0, 0);
+    SYSCALL(TERMPROCESS, 0, 0, 0);
 }

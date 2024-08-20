@@ -23,7 +23,7 @@ void handle_Terminate(pcb_t *sender)
 {
     ssi_payload_t ssi_payload = {
         .service_code = TERMPROCESS,
-        .arg = (unsigned int)sender};
+        .arg = (void *)sender};
 
     // Send terminate request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
@@ -40,7 +40,7 @@ void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
 {
     ssi_payload_t ssi_payload = {
         .service_code = WRITEPRINTER,
-        .arg = (unsigned int)print_payload};
+        .arg = (void *)print_payload};
 
     // Send print request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
@@ -57,7 +57,7 @@ void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
 {
     ssi_payload_t ssi_payload = {
         .service_code = WRITETERMINAL,
-        .arg = (unsigned int)print_payload};
+        .arg = (void *)print_payload};
 
     // Send terminal write request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);

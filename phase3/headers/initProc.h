@@ -1,11 +1,6 @@
 #ifndef INITPROC
 #define INITPROC
 
-#include <umps3/umps/libumps.h>
-#include <umps3/umps/cp0.h>
-#include "../../headers/const.h"
-#include "../../headers/types.h"
-#include "../../headers/listx.h"
 #include "../../phase2/headers/initial.h"
 #include "./vmSupport.h"
 #include "./sst.h"
@@ -34,10 +29,17 @@ be configured (preloaded) to contain that U-proc’s logical image. While slight
 basic version of the Support Level will use each U-proc’s flash device as its backing store device.
  */
 
-static int asid;
+/**
+ * Current ASID value
+ */
+int asid;
+
+pcb_PTR startProcess(int asid);
+memaddr getStackFrame();
+
+support_t *GetSupportPtr();
+pcb_t *CreateProcess(state_t *state, support_t *supp);
+
 void test();
-static pcb_PTR startProcess(int asid);
-static memaddr getStackFrame();
-void signalProcessTermination();
 
 #endif
