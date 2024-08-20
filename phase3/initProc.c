@@ -1,6 +1,5 @@
 #include "./headers/initProc.h"
 
-#define SELF NULL
 /**
  * Memory pool of support strucures
  */
@@ -9,6 +8,10 @@ static support_t support_arr[UPROCMAX];
  * List of free support structs
  */
 static struct list_head free_support;
+/**
+ * Current ASID value
+ */
+static int asid = 1;
 
 /**
  * Whenever a new Support Structure is needed to support a new U-proc, a call to allocate returns a pointer to a
@@ -49,7 +52,7 @@ static void initFreeSupportList()
 }
 
 /**
- * @return address of a free page that will be used as a stack.
+ * @return address of a free frame that will be used as a stack.
  */
 static memaddr getStackFrame()
 {
@@ -57,6 +60,7 @@ static memaddr getStackFrame()
     memaddr ram_top;
     RAMTOP(ram_top);
 
+    // starting from second last frame
     memaddr frame_address = (ram_top - PAGESIZE) - (curr_offset * PAGESIZE);
     curr_offset++;
 
@@ -96,6 +100,19 @@ support_t *GetSupportPtr()
 }
 
 /**
+ * Initializes the processor state of a new SST.
+ * @param asid process ASID.
+ * @param state points to the new processor state.
+ */
+static void initSSTState(int asid, state_t *state)
+{
+    state->reg_t9 = state->pc_epc = SST_server;
+    state->reg_sp = getStackFrame();
+    state->status = EALLINTPLT; // all interrupts enabled + PLT enabled
+    state->entry_hi = (asid << ENTRYHI_ASID_BIT);
+}
+
+/**
  * Initializes the processor state of a new U-proc.
  * @param asid process ASID.
  * @param state points to the new processor state.
@@ -104,7 +121,7 @@ static void initUProcState(int asid, state_t *state)
 {
     state->reg_t9 = state->pc_epc = 0x800000B0;
     state->reg_sp = 0xC0000000;
-    state->status = ALLOFF | (IMON | IEPON) | TEBITON | USERPON; // Interrupt abilitati + PLT abilitato + User mode
+    state->status = ALLOFF | IMON | IEPON | TEBITON | USERPON; // All interrupts enable + PLT enabled + User mode
     state->entry_hi = (asid << ENTRYHI_ASID_BIT);
 }
 
@@ -113,7 +130,7 @@ static void initUProcState(int asid, state_t *state)
  * @param asid process ASID.
  * @param support points to the new support structure.
  */
-static void _initSupportStructure(int asid, support_t *support)
+static void initSupportStructure(int asid, support_t *support)
 {
     support->sup_asid = asid;
 
@@ -121,41 +138,57 @@ static void _initSupportStructure(int asid, support_t *support)
     memaddr page_fault_stack = getStackFrame();
     memaddr general_stack = getStackFrame();
     support->sup_exceptContext[PGFAULTEXCEPT].pc = (memaddr)TLBExceptionHandler;
-    support->sup_exceptContext[PGFAULTEXCEPT].status = ALLOFF | (IMON | IEPON) | TEBITON; // Interrupt abilitati + PLT abilitato + Kernel mode
+    support->sup_exceptContext[PGFAULTEXCEPT].status = ALLOFF | IMON | IEPON | TEBITON; // Interrupt abilitati + PLT abilitato + Kernel mode
     support->sup_exceptContext[PGFAULTEXCEPT].stackPtr = page_fault_stack;
     support->sup_exceptContext[GENERALEXCEPT].pc = (memaddr)generalExceptionHandler;
-    support->sup_exceptContext[GENERALEXCEPT].status = ALLOFF | (IMON | IEPON) | TEBITON; // Interrupt abilitati + PLT abilitato + Kernel mode
+    support->sup_exceptContext[GENERALEXCEPT].status = ALLOFF | IMON | IEPON | TEBITON; // Interrupt abilitati + PLT abilitato + Kernel mode
     support->sup_exceptContext[GENERALEXCEPT].stackPtr = general_stack;
 
-    /*
-        Inizializzazione della tabella delle pagine.
-        Dal momento che il processo non è ancora stato avviato, si può usare come frame temporaneo uno di quelli assegnati per lo stack.
-        Lo stack viene inizializzato puntando alla fine del frame. Questo perché lo stack cresce verso il basso (nel senso inverso alla memoria).
-        Bisogna quindi calcolare l'indirizzo "dell'altra estremità" del frame (l'inizio) per poterlo usare correttamente.
-    */
+    // Initialize page table
+    // Process didn't start yet so we can use one designated stack for the exception handlers as a temporary frame.
     memaddr tmp_frame = general_stack - PAGESIZE + WORDLEN;
     initPageTable(asid, support->sup_privatePgTbl, tmp_frame);
 }
 
 /**
- * Initializes a U-proc.
- * @param asid ASID of the U-proc to initialize.
+ * Initializes a SST thread. ASID 0 is reserved for kernel daemons.
  */
-static void startProcess(int asid)
+static void startSSTs()
 {
     state_t state;
-    support_t *support_structure = allocate();
+    support_t *support_struct = allocate();
 
+    // initialize state
+    initSSTState(0, &state);
+    // initialize support struct
+    initSupportStructure(0, support_struct);
+    // request creation to the kernel
+    CreateProcess(&state, support_struct);
+}
+
+/**
+ * Initializes a U-proc.
+ * @param asid ASID of the U-proc to initialize.
+ * @returns pcb of the User process just created.
+ */
+static pcb_PTR startProcess(int asid)
+{
+    state_t state;
+    support_t *support_struct = allocate();
+
+    // initialize state
     initUProcState(asid, &state);
-    _initSupportStructure(asid, support_structure);
-    CreateProcess(&state, support_structure);
+    // initialize support struct
+    initSupportStructure(asid, support_struct);
+    // request creation to the kernel
+    return CreateProcess(&state, support_struct);
 }
 
 /**
  * Whenever a U-proc terminates, a call is made to deallocate to return the Support Structure to the free list.
  * Must be called while terminating a U-proc.
  */
-void signalProcessTermination()
+static void signalProcessTermination()
 {
     deallocate(GetSupportPtr());
 }
@@ -170,10 +203,10 @@ void test()
     initSysStructs();
     initFreeSupportList();
 
-    // Initialize U-proc
+    // Initialize SST(s)
     for (int i = 1; i <= UPROCMAX; i++)
     {
-        startProcess(i);
+        startSSTs();
     }
 
     // Wait for all U-proc termination,
@@ -181,7 +214,8 @@ void test()
     {
         // Test process will wake up UPROCMAX times
         SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
+        signalProcessTermination();
     }
 
-    SYSCALL(TERMPROCESS, SELF, 0, 0);
+    SYSCALL(TERMPROCESS, NULL, 0, 0);
 }

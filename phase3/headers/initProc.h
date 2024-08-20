@@ -1,5 +1,5 @@
-#ifndef PANDOS_INITPROC_H_INCLUDED
-#define PANDOS_INITPROC_H_INCLUDED
+#ifndef INITPROC
+#define INITPROC
 
 #include <umps3/umps/libumps.h>
 #include <umps3/umps/cp0.h>
@@ -8,6 +8,8 @@
 #include "../../headers/listx.h"
 #include "../../phase2/headers/initial.h"
 #include "./vmSupport.h"
+#include "./sst.h"
+#include "./sysSupport.h"
 
 /**
  - One Page Table per U-proc. A μPandOS Page Table will be an array of 32 Page Table entries.
@@ -32,8 +34,10 @@ be configured (preloaded) to contain that U-proc’s logical image. While slight
 basic version of the Support Level will use each U-proc’s flash device as its backing store device.
  */
 
+static int asid;
 void test();
-
+static pcb_PTR startProcess(int asid);
+static memaddr getStackFrame();
 void signalProcessTermination();
 
 #endif

@@ -1,22 +1,11 @@
-
-// Define service codes
-#define GET_TOD 1
-#define TERMINATE 2
-#define WRITEPRINTER 3
-#define WRITETERMINAL 4
-
-//Structure for printing to devices
-/**typedef struct {
-    int length;
-    char *string;
-} sst_print_t;*/
+#include "./headers/sst.h"
 
 // Function to handle the GetTOD request
-void handle_GetTOD(pcb_t *sender) {
-    ssi_payload_t sst_payload = {
+void handle_GetTOD(pcb_t *sender)
+{
+    ssi_payload_t ssi_payload = {
         .service_code = GETTIME,
-        .arg = 0
-    };
+        .arg = 0};
 
     // Send request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
@@ -30,12 +19,12 @@ void handle_GetTOD(pcb_t *sender) {
 }
 
 // Function to handle the Terminate request
-void handle_Terminate(pcb_t *sender) {
+void handle_Terminate(pcb_t *sender)
+{
     ssi_payload_t ssi_payload = {
         .service_code = TERMPROCESS,
-        .arg = (unsigned int)sender
-    };
-    
+        .arg = (unsigned int)sender};
+
     // Send terminate request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
 
@@ -47,12 +36,12 @@ void handle_Terminate(pcb_t *sender) {
 }
 
 // Function to handle the WritePrinter request
-void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload) {
+void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
+{
     ssi_payload_t ssi_payload = {
         .service_code = WRITEPRINTER,
-        .arg = (unsigned int)print_payload
-    };
-    
+        .arg = (unsigned int)print_payload};
+
     // Send print request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
 
@@ -64,12 +53,12 @@ void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload) {
 }
 
 // Function to handle the WriteTerminal request
-void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload) {
+void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
+{
     ssi_payload_t ssi_payload = {
         .service_code = WRITETERMINAL,
-        .arg = (unsigned int)print_payload
-    };
-    
+        .arg = (unsigned int)print_payload};
+
     // Send terminal write request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
 
@@ -81,8 +70,10 @@ void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload) {
 }
 
 // Process the incoming request from the child process
-void SSTRequest(pcb_t *sender, int service, void *arg) {
-    switch (service) {
+void SSTRequest(pcb_t *sender, int service, void *arg)
+{
+    switch (service)
+    {
     case GET_TOD:
         handle_GetTOD(sender);
         break;
@@ -90,10 +81,10 @@ void SSTRequest(pcb_t *sender, int service, void *arg) {
         handle_Terminate(sender);
         break;
     case WRITEPRINTER:
-        handle_WritePrinter(sender, (sst_print_t *) arg);
+        handle_WritePrinter(sender, (sst_print_t *)arg);
         break;
     case WRITETERMINAL:
-        handle_WriteTerminal(sender, (sst_print_t *) arg);
+        handle_WriteTerminal(sender, (sst_print_t *)arg);
         break;
     default:
         // Invalid service code, terminate the process
@@ -101,17 +92,22 @@ void SSTRequest(pcb_t *sender, int service, void *arg) {
     }
 }
 
-// System Service Thread (SST) main loop
-void SST_server() {
-    while (TRUE) {
+// System Service Thread (SST) main loop, also starts the child u-proc before entering the loop
+void SST_server()
+{
+    // start the child U-proc with the current asid
+    pcb_PTR u_proc = startProcess(asid);
+
+    while (TRUE)
+    {
         pcb_t *sender = NULL;
         ssi_payload_t payload;
 
         // Receive a request from the SST's inbox
         sender = receive_request(&payload);
 
-        // Process the request based on the service code
-        SSTRequest(sender, payload.service_code, payload.arg);
+        if (sender == u_proc)
+            // Process the request based on the service code
+            SSTRequest(sender, payload.service_code, payload.arg);
     }
 }
-

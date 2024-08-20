@@ -342,12 +342,9 @@ void initSwapStructs()
     state_t swap_mutex_state;
 
     STST(&swap_mutex_state);
-    // mutex process will be at ramtop, then sst(s)
-    unsigned int ramTop;
-    RAMTOP(ramTop);
-    swap_mutex_state.reg_sp = ramTop - PAGESIZE;
+    swap_mutex_state.reg_sp = getStackFrame();
     swap_mutex_state.pc_epc = (memaddr)swap_mutex;
-    swap_mutex_state.status = ALLOFF | (IMON | IEPON) | TEBITON | USERPON; // all interrupts enabled + PLT enabled
+    swap_mutex_state.status = EALLINTPLT; // all interrupts enabled + PLT enabled
 
     // create swap mutex process
     swap_mutex_proc = CreateProcess(&swap_mutex_state);

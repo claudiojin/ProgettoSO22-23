@@ -1,22 +1,14 @@
 #ifndef SST_H
 #define SST_H
 
-#include "../headers"
-#include "../../phase2/headers/ssi.h"
-#include "../../phase2/headers/exceptions.h"
-
+#include "../../phase2/headers/initial.h"
+#include "./initProc.h"
 
 // Service codes for SST
-#define GET_TOD         1
-#define TERMINATE       2
-#define WRITEPRINTER    3
-#define WRITETERMINAL   4
-
-// Structure to hold print data for writing to devices
-typedef struct {
-    int length;
-    char *string;
-} sst_print_t;
+#define GET_TOD 1
+#define TERMINATE 2
+#define WRITEPRINTER 3
+#define WRITETERMINAL 4
 
 // Function to handle GetTOD request
 void handle_GetTOD(pcb_t *sender);
@@ -36,4 +28,4 @@ void SSTRequest(pcb_t *sender, int service, void *arg);
 // Main server loop for SST
 void SST_server();
 
-#endif //SST_H
+#endif
