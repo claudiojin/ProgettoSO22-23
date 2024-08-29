@@ -65,6 +65,23 @@ memaddr getStackFrame()
     return frame_address;
 }
 
+int DoIO(unsigned int addr, int value)
+{
+    int status;
+    ssi_do_io_t do_io = {
+        .commandAddr = addr,
+        .commandValue = value,
+    };
+    ssi_payload_t payload = {
+        .service_code = DOIO,
+        .arg = &do_io,
+    };
+    SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&payload), 0);
+    SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&status), 0);
+
+    return status;
+}
+
 /** Requests a CreateProcess service directly to the SSI
  * @param state Pointer to the initial processor state for the U-proc
  * @param supp Pointer to an initialized Support Structure for the U-proc
@@ -85,6 +102,19 @@ pcb_t *CreateProcess(state_t *state, support_t *supp)
     return p;
 }
 
+/**
+ * @param arg process to terminate
+ */
+void TerminateProc(pcb_t *arg)
+{
+    ssi_payload_t term_process_payload = {
+        .service_code = TERMPROCESS,
+        .arg = (void *)arg,
+    };
+    SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&term_process_payload), 0);
+    SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, 0, 0);
+}
+
 support_t *GetSupportPtr()
 {
     support_t *support;
@@ -92,6 +122,7 @@ support_t *GetSupportPtr()
         .service_code = GETSUPPORTPTR,
         .arg = NULL,
     };
+
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&getsup_payload), 0);
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&support), 0);
     return support;
@@ -186,7 +217,7 @@ pcb_PTR startProcess(int asid)
  * Whenever a U-proc terminates, a call is made to deallocate to return the Support Structure to the free list.
  * Must be called while terminating a U-proc.
  */
-static void signalProcessTermination()
+void signalProcessTermination()
 {
     deallocate(GetSupportPtr());
 }
@@ -198,7 +229,6 @@ void test()
 {
     // Initialize the Level 4/Phase 3 data structures.
     initSwapStructs();
-    initSysStructs();
     initFreeSupportList();
 
     // Initialize SST(s)

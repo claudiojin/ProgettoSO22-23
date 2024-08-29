@@ -39,6 +39,10 @@ memaddr getStackFrame();
 
 support_t *GetSupportPtr();
 pcb_t *CreateProcess(state_t *state, support_t *supp);
+int DoIO(unsigned int addr, int value);
+void TerminateProc(pcb_t *arg);
+
+void signalProcessTermination();
 
 void test();
 

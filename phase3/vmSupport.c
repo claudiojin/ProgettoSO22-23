@@ -41,33 +41,30 @@
  * of μPandOS’s paging functionality, the size of the Swap Pool should be set to two times UPROCMAX
  */
 static swap_t swap_pool_table[POOLSIZE];
-/**
- * Swap pool process to guarantee mutual exclusion.
- * To access the Swap Pool table, a process must first perform a message to this process and waiting
- * for a response message. When access to the Swap Pool table is concluded, a process will then send a
- * message to this process to release the mutual exclusion
- */
-static pcb_PTR swap_mutex_proc;
-/**
- * Process currently accessing the mutually exclusive swap pool
- */
-static pcb_PTR curr_mutex_proc = NULL;
+
+pcb_PTR swap_mutex_proc;
+
+pcb_PTR curr_mutex_proc = NULL;
+
 /**
  * Mutex function for the swap pool
  */
 static void swap_mutex()
 {
-    if (curr_mutex_proc == NULL)
+    while (TRUE)
     {
-        // receive request for mutual exclusion from a process
-        pcb_PTR sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-        // send a message back to sender to notify it
-        SYSCALL(SENDMESSAGE, (unsigned int)sender, 0, 0);
-    }
-    else
-    {
-        SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_mutex_proc, 0, 0);
-        curr_mutex_proc = NULL;
+        if (curr_mutex_proc == NULL)
+        {
+            // receive request for mutual exclusion from a process
+            pcb_PTR sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
+            // send a message back to sender to notify it
+            SYSCALL(SENDMESSAGE, (unsigned int)sender, 0, 0);
+        }
+        else
+        {
+            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_mutex_proc, 0, 0);
+            curr_mutex_proc = NULL;
+        }
     }
 };
 
@@ -96,11 +93,11 @@ static void backingStoreOperation(int operation_command, int asid, int page_num,
 {
     dtpreg_t *flash_dev_reg = (dtpreg_t *)DEV_REG_ADDR(4, asid - 1);
 
-    // Inizializzazione parametri
+    // Initialize command value and command address
     flash_dev_reg->data0 = frame_address;
     int command = (page_num << 8) + operation_command;
 
-    int status = DO_IO((memaddr)&flash_dev_reg->command, command);
+    int status = DoIO((memaddr)&flash_dev_reg->command, command);
 
     if (status == FLASH_WRITE_ERROR || status == FLASH_READ_ERROR)
     {

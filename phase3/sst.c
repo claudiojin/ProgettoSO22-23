@@ -5,7 +5,8 @@ void handle_GetTOD(pcb_t *sender)
 {
     ssi_payload_t ssi_payload = {
         .service_code = GETTIME,
-        .arg = 0};
+        .arg = 0,
+    };
 
     // Send request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
