@@ -9,7 +9,7 @@ static support_t support_arr[UPROCMAX];
  */
 static struct list_head free_support;
 
-int asid = 1;
+int Asid = 1;
 
 /**
  * Whenever a new Support Structure is needed to support a new U-proc, a call to allocate returns a pointer to a
@@ -65,7 +65,7 @@ memaddr getStackFrame()
     return frame_address;
 }
 
-int DoIO(unsigned int addr, int value)
+int DoIO(unsigned int *addr, unsigned int value)
 {
     int status;
     ssi_do_io_t do_io = {

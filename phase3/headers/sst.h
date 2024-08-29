@@ -3,6 +3,7 @@
 
 #include "../../phase2/headers/initial.h"
 #include "./initProc.h"
+#include "./vmSupport.h"
 
 // Service codes for SST
 #define GET_TOD 1

@@ -13,11 +13,11 @@
  * for a response message. When access to the Swap Pool table is concluded, a process will then send a
  * message to this process to release the mutual exclusion
  */
-pcb_PTR swap_mutex_proc;
+extern pcb_PTR swap_mutex_proc;
 /**
  * Process currently accessing the mutually exclusive swap pool
  */
-pcb_PTR curr_mutex_proc;
+extern pcb_PTR curr_mutex_proc;
 
 void initSwapStructs();
 

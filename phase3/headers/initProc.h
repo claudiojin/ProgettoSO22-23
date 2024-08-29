@@ -32,14 +32,14 @@ basic version of the Support Level will use each U-proc’s flash device as its 
 /**
  * Current ASID value
  */
-int asid;
+extern int Asid;
 
 pcb_PTR startProcess(int asid);
 memaddr getStackFrame();
 
 support_t *GetSupportPtr();
 pcb_t *CreateProcess(state_t *state, support_t *supp);
-int DoIO(unsigned int addr, int value);
+int DoIO(unsigned int *addr, unsigned int value);
 void TerminateProc(pcb_t *arg);
 
 void signalProcessTermination();

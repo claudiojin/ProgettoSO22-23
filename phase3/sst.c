@@ -97,7 +97,7 @@ void SSTRequest(pcb_t *sender, int service, void *arg)
 void SST_server()
 {
     // start the child U-proc with the current asid
-    pcb_PTR u_proc = startProcess(asid);
+    pcb_PTR u_proc = startProcess(Asid);
 
     while (TRUE)
     {
