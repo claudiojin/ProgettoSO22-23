@@ -1,5 +1,20 @@
 #include "./headers/sst.h"
 
+// child User process of this SST thread
+static pcb_t *u_proc;
+
+// As the SST, receive a message from child process
+pcb_t *receive_req(ssi_payload_t *payload_address)
+{
+    return (pcb_PTR)SYSCALL(RECEIVEMESSAGE, (unsigned int)u_proc, (unsigned int)payload_address, 0);
+}
+
+// As the SST, send a response back to U-proc after executing a service
+void send_res(pcb_t *destination, void *response)
+{
+    SYSCALL(SENDMESSAGE, (unsigned int)destination, (unsigned int)response, 0);
+}
+
 // Function to handle the GetTOD request
 void handle_GetTOD(pcb_t *sender)
 {
@@ -16,7 +31,7 @@ void handle_GetTOD(pcb_t *sender)
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&tod, 0);
 
     // Send the TOD back to the sender
-    send_response(sender, &tod);
+    send_res(sender, &tod);
 }
 
 // Function to handle the Terminate request
@@ -30,7 +45,7 @@ void handle_Terminate(pcb_t *sender)
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
 
     // Send termination acknowledgment to the sender
-    send_response(sender, NULL);
+    send_res(sender, NULL);
 
     // Terminate the SST process
     TerminateProcess(sender);
@@ -50,7 +65,7 @@ void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, 0, 0);
 
     // Send completion acknowledgment to the sender
-    send_response(sender, NULL);
+    send_res(sender, NULL);
 }
 
 // Function to handle the WriteTerminal request
@@ -67,7 +82,7 @@ void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, 0, 0);
 
     // Send completion acknowledgment to the sender
-    send_response(sender, NULL);
+    send_res(sender, NULL);
 }
 
 // Process the incoming request from the child process
@@ -97,7 +112,7 @@ void SSTRequest(pcb_t *sender, int service, void *arg)
 void SST_server()
 {
     // start the child U-proc with the current asid
-    pcb_PTR u_proc = startProcess(Asid);
+    u_proc = startProcess(Asid);
 
     while (TRUE)
     {
@@ -105,7 +120,7 @@ void SST_server()
         ssi_payload_t payload;
 
         // Receive a request from the SST's inbox
-        sender = receive_request(&payload);
+        sender = receive_req(&payload);
 
         if (sender == u_proc)
             // Process the request based on the service code

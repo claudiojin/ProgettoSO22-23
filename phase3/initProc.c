@@ -231,7 +231,7 @@ void test()
     initSwapStructs();
     initFreeSupportList();
 
-    // Initialize SST(s)
+    // Initialize SST(s) with corresponding U-proc
     for (int i = 1; i <= UPROCMAX; i++)
     {
         startSSTs();

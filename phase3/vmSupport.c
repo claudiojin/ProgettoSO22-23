@@ -62,6 +62,7 @@ static void swap_mutex()
         }
         else
         {
+            // receive a message from curretn mutex process to release mutual exclusion
             SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_mutex_proc, 0, 0);
             curr_mutex_proc = NULL;
         }
@@ -97,7 +98,7 @@ static void backingStoreOperation(int operation_command, int asid, int page_num,
     flash_dev_reg->data0 = frame_address;
     int command = (page_num << 8) + operation_command;
 
-    int status = DoIO((memaddr)&flash_dev_reg->command, command);
+    int status = DoIO(&flash_dev_reg->command, command);
 
     if (status == FLASH_WRITE_ERROR || status == FLASH_READ_ERROR)
     {
