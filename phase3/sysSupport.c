@@ -44,13 +44,13 @@ int USendMsg(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     message->m_sender = sender;
 
     // payload handling, for now these are the types of messages we deal with, might change in phase 3
-    if (destination == ssi_pcb)
+    if (destination == swap_mutex_proc)
     {
         ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
         message->ssi_payload.service_code = cast_payload->service_code;
         message->ssi_payload.arg = cast_payload->arg;
     }
-    else if (sender == ssi_pcb)
+    else if (sender == swap_mutex_proc)
     {
         message->m_payload = *payload;
     }
@@ -98,7 +98,7 @@ pcb_t *UReceiveMsg(pcb_t *sender, unsigned int *payload)
     // update the payload if needed
     if (payload != NULL)
     {
-        if (current_process == ssi_pcb)
+        if (current_process == swap_mutex_proc)
         {
             ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
 
