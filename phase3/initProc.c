@@ -1,4 +1,5 @@
 #include "./headers/initProc.h"
+#include "../phase2/headers/klog.h"
 
 /**
  * Memory pool of support strucures
@@ -8,8 +9,6 @@ static support_t support_arr[UPROCMAX];
  * List of free support structs
  */
 static struct list_head free_support;
-
-int Asid = 1;
 
 /**
  * Whenever a new Support Structure is needed to support a new U-proc, a call to allocate returns a pointer to a
@@ -54,11 +53,14 @@ static void initFreeSupportList()
  */
 memaddr getStackFrame()
 {
-    static int curr_offset = 0;
+    static int curr_offset = 1;
     memaddr ram_top;
     RAMTOP(ram_top);
 
-    // starting from second last frame
+    klog_print("RAMTOP: ");
+    klog_print_hex(ram_top);
+
+    // starting from third last frame
     memaddr frame_address = (ram_top - PAGESIZE) - (curr_offset * PAGESIZE);
     curr_offset++;
 
@@ -129,19 +131,6 @@ support_t *GetSupportPtr()
 }
 
 /**
- * Initializes the processor state of a new SST.
- * @param asid process ASID.
- * @param state points to the new processor state.
- */
-static void initSSTState(int asid, state_t *state)
-{
-    state->reg_t9 = state->pc_epc = (memaddr)SST_server;
-    state->reg_sp = getStackFrame();
-    state->status = ALLOFF | EALLINTPLT; // all interrupts enabled + PLT enabled
-    state->entry_hi = (asid << ENTRYHI_ASID_BIT);
-}
-
-/**
  * Initializes the processor state of a new U-proc.
  * @param asid process ASID.
  * @param state points to the new processor state.
@@ -161,16 +150,17 @@ static void initUProcState(int asid, state_t *state)
  */
 static void initSupportStructure(int asid, support_t *support)
 {
+    // Initialize asid
     support->sup_asid = asid;
 
-    // Inizializzazione gestori eccezioni
+    // Initialize exception handlers
     memaddr page_fault_stack = getStackFrame();
     memaddr general_stack = getStackFrame();
     support->sup_exceptContext[PGFAULTEXCEPT].pc = (memaddr)TLBExceptionHandler;
-    support->sup_exceptContext[PGFAULTEXCEPT].status = ALLOFF | IMON | IEPON | TEBITON; // Interrupt abilitati + PLT abilitato + Kernel mode
+    support->sup_exceptContext[PGFAULTEXCEPT].status = ALLOFF | (IMON | IEPON) | TEBITON; // Interrupt abilitati + PLT abilitato + Kernel mode
     support->sup_exceptContext[PGFAULTEXCEPT].stackPtr = page_fault_stack;
     support->sup_exceptContext[GENERALEXCEPT].pc = (memaddr)generalExceptionHandler;
-    support->sup_exceptContext[GENERALEXCEPT].status = ALLOFF | IMON | IEPON | TEBITON; // Interrupt abilitati + PLT abilitato + Kernel mode
+    support->sup_exceptContext[GENERALEXCEPT].status = ALLOFF | (IMON | IEPON) | TEBITON; // Interrupt abilitati + PLT abilitato + Kernel mode
     support->sup_exceptContext[GENERALEXCEPT].stackPtr = general_stack;
 
     // Initialize page table
@@ -182,17 +172,18 @@ static void initSupportStructure(int asid, support_t *support)
 /**
  * Initializes a SST thread. ASID 0 is reserved for kernel daemons.
  */
-static void startSSTs()
+static void startSSTs(int asid)
 {
-    state_t state;
-    support_t *support_struct = allocate();
+    state_t sst_state;
 
     // initialize state
-    initSSTState(0, &state);
-    // initialize support struct
-    initSupportStructure(0, support_struct);
+    STST(&sst_state);
+    sst_state.pc_epc = (memaddr)SST_server;
+    sst_state.reg_sp = getStackFrame();
+    sst_state.status |= EALLINTPLT;                  // all interrupts enabled + PLT enabled
+    sst_state.entry_hi = (asid << ENTRYHI_ASID_BIT); // has the same asid as the child U-proc
     // request creation to the kernel
-    CreateProcess(&state, support_struct);
+    CreateProcess(&sst_state, NULL);
 }
 
 /**
@@ -232,13 +223,13 @@ void test()
     initFreeSupportList();
 
     // Initialize SST(s) with corresponding U-proc
-    for (int i = 1; i <= UPROCMAX; i++)
+    for (int i = 1; i <= 1; i++)
     {
-        startSSTs();
+        startSSTs(i);
     }
 
     // Wait for all U-proc termination,
-    for (int i = 0; i < UPROCMAX; i++)
+    for (int i = 0; i < 1; i++)
     {
         // Test process will wake up UPROCMAX times
         SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);

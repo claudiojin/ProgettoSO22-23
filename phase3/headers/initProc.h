@@ -29,11 +29,6 @@ be configured (preloaded) to contain that U-proc’s logical image. While slight
 basic version of the Support Level will use each U-proc’s flash device as its backing store device.
  */
 
-/**
- * Current ASID value
- */
-extern int Asid;
-
 pcb_PTR startProcess(int asid);
 memaddr getStackFrame();
 

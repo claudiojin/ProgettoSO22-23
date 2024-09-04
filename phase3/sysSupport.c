@@ -125,7 +125,7 @@ pcb_t *UReceiveMsg(pcb_t *sender, unsigned int *payload)
 /**
  * @brief Gestore delle system call.
  */
-static void _systemcallHandler(support_t *support_structure)
+static void SuppSystemcallHandler(support_t *support_structure)
 {
 
     switch (SUP_SYSCALL_CODE(support_structure))
@@ -173,8 +173,8 @@ void generalExceptionHandler()
 
     switch (CAUSE_GET_EXCCODE(support_structure->sup_exceptState[GENERALEXCEPT].cause))
     {
-    case 8: // TODO CLAUDIO: CONTROLLARE SE IL CODICE È GIUSTO
-        _systemcallHandler(support_structure);
+    case 8:
+        SuppSystemcallHandler(support_structure);
         break;
     default:
         trapExceptionHandler();

@@ -7,13 +7,9 @@
 
 void uTLB_RefillHandler()
 {
-
     // Determine the page number (denoted as p) of the missing TLB entry by inspecting EntryHi in
     // the saved exception state located at the start of the BIOS Data Page.
-    unsigned int vpn = (0b1 << 19) + ENTRYHI_GET_VPN(getENTRYHI());
-
-    klog_print(" VPN: ");
-    klog_print_hex(getENTRYHI());
+    unsigned int vpn = (0b1 << 19) + ENTRYHI_GET_VPN(PROCSTATE->entry_hi);
 
     int page_number;
     // The VPN field will be set to [0x80000..0x8001E] for the first 31 entries. The VPN for the stack

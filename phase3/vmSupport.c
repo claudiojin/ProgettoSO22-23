@@ -1,4 +1,5 @@
 #include "./headers/vmSupport.h"
+#include "../phase2/headers/klog.h"
 
 /**  This module implements The Pager.
  * Since reading and writing to each U-proc’s flash device is limited to supporting paging, this module should
@@ -85,17 +86,24 @@ static int getPageIndex(unsigned int entry_hi)
 
 /**
  * Executes a READ/WRITE operation on the backing store
- * @param operation_command     Type of operation (FLASHWRITE/FLASHREAD)
- * @param asid Process ASID
- * @param page_num Number of the page to execute operation onto
- * @param frame_address Starting address of frame containing the page
+ * @param operation_command Type of operation (FLASHWRITE/FLASHREAD)
+ * @param asid              Process ASID
+ * @param page_num          Number of the page to execute operation onto
+ * @param frame_address     Starting physical address of the 4k block to be read (or written);
  */
 static void backingStoreOperation(int operation_command, int asid, int page_num, memaddr frame_address)
 {
-    dtpreg_t *flash_dev_reg = (dtpreg_t *)DEV_REG_ADDR(4, asid - 1);
+    // since asid starts from 1 device number must be decremented
+    dtpreg_t *flash_dev_reg = (dtpreg_t *)DEV_REG_ADDR(IL_FLASH, asid - 1);
 
-    // Initialize command value and command address
+    klog_print("Frame address: ");
+    klog_print_hex(frame_address);
+    // Write the flash device’s DATA0 field with the appropriate starting physical address of the 4k
+    // block to be read (or written); the particular frame’s starting address
     flash_dev_reg->data0 = frame_address;
+
+    klog_print("breakpoint");
+    // Initialize command value
     int command = (page_num << 8) + operation_command;
 
     int status = DoIO(&flash_dev_reg->command, command);
@@ -107,10 +115,10 @@ static void backingStoreOperation(int operation_command, int asid, int page_num,
 }
 
 /**
- * @brief Writes on correct flash drive the data of a selected process page.
+ * Writes on correct flash drive the data of a selected process page.
  * @param asid              Process ASID
  * @param page_num          Number of the page to write
- * @param frame_address     Starting address of frame containing the page
+ * @param frame_address     Starting physical address of the 4k block to be written
  */
 static void writePageToFlash(int asid, int page_num, memaddr frame_address)
 {
@@ -118,10 +126,10 @@ static void writePageToFlash(int asid, int page_num, memaddr frame_address)
 }
 
 /**
- * @brief Reads from correct flash drive, the data of a selected process page.
+ * Reads from correct flash drive, the data of a selected process page.
  * @param asid              Process ASID
  * @param page_num          Number of the page to read
- * @param frame_address     Starting address of frame containing the page
+ * @param frame_address     Starting physical address of the 4k block to be read
  */
 static void readPageFromFlash(int asid, int page_num, memaddr frame_address)
 {
@@ -145,34 +153,6 @@ static void updateTLB(pteEntry_t *entry)
         setENTRYLO(entry->pte_entryLO);
         TLBWI();
     }
-}
-
-/**
- * Implements the Page Replacement Algorithm (FIFO)
- * @returns swap pool table entry of selected frame.
- */
-static swap_t *getFrame()
-{
-    static int frame_index = 0;
-    swap_t *frame_entry = NULL;
-
-    // moves counter to a free frame if it exists, does a full circle otherwise
-    for (int i = 0; i < POOLSIZE; i++)
-    {
-        if (IS_FREE_FRAME(&swap_pool_table[frame_index]))
-        {
-            break;
-        }
-        frame_index = (frame_index + 1) % POOLSIZE;
-    }
-
-    // extract frame from swap pool table
-    frame_entry = &swap_pool_table[frame_index];
-
-    // increment counter, which is possibly the next free frame
-    frame_index = (frame_index + 1) % POOLSIZE;
-
-    return frame_entry;
 }
 
 /**
@@ -218,6 +198,34 @@ static void loadPage(pteEntry_t *pt_entry, swap_t *frame)
     pt_entry->pte_entryLO = (pt_entry->pte_entryLO & ~ENTRYLO_PFN_MASK) | GET_FRAME_ADDRESS(frame) | VALIDON;
     updateTLB(pt_entry);
     ENABLE_INTERRUPTS;
+}
+
+/**
+ * Implements the Page Replacement Algorithm (FIFO)
+ * @returns swap pool table entry of selected frame.
+ */
+static swap_t *getFrame()
+{
+    static int frame_index = 0;
+    swap_t *frame_entry = NULL;
+
+    // moves counter to a free frame if it exists, does a full circle otherwise
+    for (int i = 0; i < POOLSIZE; i++)
+    {
+        if (IS_FREE_FRAME(&swap_pool_table[frame_index]))
+        {
+            break;
+        }
+        frame_index = (frame_index + 1) % POOLSIZE;
+    }
+
+    // extract frame from swap pool table
+    frame_entry = &swap_pool_table[frame_index];
+
+    // increment counter, which is possibly the next free frame
+    frame_index = (frame_index + 1) % POOLSIZE;
+
+    return frame_entry;
 }
 
 /**
@@ -342,7 +350,7 @@ void initSwapStructs()
     STST(&swap_mutex_state);
     swap_mutex_state.reg_sp = getStackFrame();
     swap_mutex_state.pc_epc = (memaddr)swap_mutex;
-    swap_mutex_state.status = EALLINTPLT; // all interrupts enabled + PLT enabled
+    swap_mutex_state.status |= EALLINTPLT; // all interrupts enabled + PLT enabled
 
     // create swap mutex process
     swap_mutex_proc = CreateProcess(&swap_mutex_state, NULL);

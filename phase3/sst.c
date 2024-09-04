@@ -39,7 +39,8 @@ void handle_Terminate(pcb_t *sender)
 {
     ssi_payload_t ssi_payload = {
         .service_code = TERMPROCESS,
-        .arg = (void *)sender};
+        .arg = (void *)sender,
+    };
 
     // Send terminate request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
@@ -56,7 +57,8 @@ void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
 {
     ssi_payload_t ssi_payload = {
         .service_code = WRITEPRINTER,
-        .arg = (void *)print_payload};
+        .arg = (void *)print_payload,
+    };
 
     // Send print request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
@@ -73,7 +75,8 @@ void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
 {
     ssi_payload_t ssi_payload = {
         .service_code = WRITETERMINAL,
-        .arg = (void *)print_payload};
+        .arg = (void *)print_payload,
+    };
 
     // Send terminal write request to SSI
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
@@ -111,8 +114,8 @@ void SSTRequest(pcb_t *sender, int service, void *arg)
 // System Service Thread (SST) main loop, also starts the child u-proc before entering the loop
 void SST_server()
 {
-    // start the child U-proc with the current asid
-    u_proc = startProcess(Asid);
+    // start the child U-proc with the same SST asid
+    u_proc = startProcess(current_process->p_supportStruct->sup_asid);
 
     while (TRUE)
     {

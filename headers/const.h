@@ -207,7 +207,7 @@
 #define START_DEVREG		0x10000054
 
 /* Enable all interrupts with PLT */
-#define EALLINTPLT 0x800FF0C
+#define EALLINTPLT 0x800FD04
 
 /* Macro per accesso allo status field dei terminal registers*/
 #define TERMINAL_STATUS(status) (status & 0b11111111)
