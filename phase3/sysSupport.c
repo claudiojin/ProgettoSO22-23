@@ -23,104 +23,24 @@ static void terminate(support_t *support_struct)
     TerminateProc(NULL);
 }
 
-int USendMsg(pcb_t *destination, unsigned int *payload, pcb_t *sender)
+/**
+ * SendMessage Syscall wrapper for support level
+ * TODO: trovare un modo per avere il puntatore al padre senza utilizzare il current proc
+ */
+int USendMsg(pcb_t *destination, unsigned int payload)
 {
     // send message to parent, also called SST
     if (destination == 0)
     {
-        destination = sender->p_parent;
+        destination = current_process->p_parent;
     }
 
-    msg_t *message = allocMsg();
-
-    if (message == NULL)
-        return MSGNOGOOD;
-
-    // If the target process is in the pcbFree_h list, set the return register (v0 in μMPS3) to DEST_NOT_EXIST
-    if (searchInList(destination, NULL) == destination)
-    {
-        return DEST_NOT_EXIST;
-    }
-
-    message->m_sender = sender;
-
-    // payload handling, for now these are the types of messages we deal with, might change in phase 3
-    if (destination == swap_mutex_proc)
-    {
-        ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
-        message->ssi_payload.service_code = cast_payload->service_code;
-        message->ssi_payload.arg = cast_payload->arg;
-    }
-    else if (sender == swap_mutex_proc)
-    {
-        message->m_payload = *payload;
-    }
-    else
-    {
-        message->string_payload = (char *)payload;
-    }
-
-    // search in the ready queue or current process
-    if (destination == current_process || searchInList(destination, &ready_queue) == destination)
-    {
-        insertMessage(&destination->msg_inbox, message);
-        return 0;
-    }
-    // search in the blocked list
-    if (searchInList(destination, &blocked_proc[SEMDEVLEN]) == destination)
-    {
-        readyProcess(destination, SEMDEVLEN);
-        insertMessage(&destination->msg_inbox, message);
-        return 0;
-    }
-
-    // if we could not find the receiver for some reason return the default error
-    return MSGNOGOOD;
+    return SYSCALL(SENDMESSAGE, (unsigned int)destination, (unsigned int)payload, 0);
 }
 
-pcb_t *UReceiveMsg(pcb_t *sender, unsigned int *payload)
+pcb_t *UReceiveMsg(pcb_t *sender, unsigned int payload)
 {
-    msg_t *msg_extracted = NULL;
-    // extract the first message from the requesting process inbox
-    if (sender == ANYMESSAGE)
-    {
-        msg_extracted = popMessage(&current_process->msg_inbox, NULL);
-    }
-    // search for the specified message
-    else
-    {
-        msg_extracted = popMessage(&current_process->msg_inbox, sender);
-    }
-    // wait for the specified message
-    if (msg_extracted == NULL)
-    {
-        blockProcess(PROCSTATE, SEMDEVLEN);
-    }
-    // update the payload if needed
-    if (payload != NULL)
-    {
-        if (current_process == swap_mutex_proc)
-        {
-            ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
-
-            cast_payload->service_code = msg_extracted->ssi_payload.service_code;
-            cast_payload->arg = msg_extracted->ssi_payload.arg;
-        }
-        else if (msg_extracted->string_payload != NULL)
-        {
-            *payload = (unsigned int)msg_extracted->string_payload;
-        }
-        else
-        {
-            *payload = msg_extracted->m_payload;
-        }
-    }
-
-    // free the message and return the sender
-    pcb_PTR extracted_sender = msg_extracted->m_sender;
-    freeMsg(msg_extracted);
-
-    return extracted_sender;
+    return (pcb_PTR)SYSCALL(RECEIVEMESSAGE, (unsigned int)payload, 0, 0);
 }
 
 /**
@@ -132,10 +52,10 @@ static void SuppSystemcallHandler(support_t *support_structure)
     switch (SUP_SYSCALL_CODE(support_structure))
     {
     case 1:
-        SUP_PROC_STATE(support_structure).reg_v0 = (unsigned int)USendMsg((pcb_t *)SUP_PROC_STATE(support_structure).reg_a1, (unsigned int *)SUP_PROC_STATE(support_structure).reg_a2, current_process);
+        SUP_PROC_STATE(support_structure).reg_v0 = (unsigned int)USendMsg((pcb_t *)SUP_PROC_STATE(support_structure).reg_a1, (unsigned int)SUP_PROC_STATE(support_structure).reg_a2);
         break;
     case 2:
-        SUP_PROC_STATE(support_structure).reg_v0 = (unsigned int)UReceiveMsg((pcb_t *)SUP_PROC_STATE(support_structure).reg_a1, (unsigned int *)SUP_PROC_STATE(support_structure).reg_a2);
+        SUP_PROC_STATE(support_structure).reg_v0 = (unsigned int)UReceiveMsg((pcb_t *)SUP_PROC_STATE(support_structure).reg_a1, (unsigned int)SUP_PROC_STATE(support_structure).reg_a2);
         break;
     default:
         trapExceptionHandler();
@@ -165,15 +85,14 @@ void trapExceptionHandler()
     terminate(support_struct);
 }
 
+// 0x2000321C
+
 /**
  * @brief Gestore delle general exceptions.
  */
 void generalExceptionHandler()
 {
     support_t *support_structure = GetSupportPtr();
-
-    klog_print("Cause: ");
-    klog_print_dec(CAUSE_GET_EXCCODE(support_structure->sup_exceptState[GENERALEXCEPT].cause));
 
     switch (CAUSE_GET_EXCCODE(support_structure->sup_exceptState[GENERALEXCEPT].cause))
     {

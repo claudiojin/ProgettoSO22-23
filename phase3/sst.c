@@ -116,8 +116,8 @@ void SSTRequest(pcb_t *sender, int service, void *arg)
 void SST_server()
 {
     support_t *sst_support = GetSupportPtr();
-    // start the child U-proc with the same SST asid
 
+    // start the child U-proc with the same SST asid
     u_proc = startProcess(sst_support->sup_asid, sst_support);
 
     while (TRUE)
@@ -127,6 +127,9 @@ void SST_server()
 
         // Receive a request from the SST's inbox
         sender = receive_req(&payload);
+
+        klog_print(" service code SST: ");
+        klog_print_dec(payload.service_code);
 
         if (sender == u_proc)
             // Process the request based on the service code

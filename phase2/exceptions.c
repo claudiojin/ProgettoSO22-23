@@ -65,6 +65,8 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     {
         ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
         message->ssi_payload.service_code = cast_payload->service_code;
+        klog_print(" SendMsg service code: ");
+        klog_print_dec(message->ssi_payload.service_code);
         message->ssi_payload.arg = cast_payload->arg;
     }
     else if (sender == ssi_pcb)
@@ -189,22 +191,20 @@ void syscallProgramTrap()
  */
 void systemCallHandler()
 {
-    // Kernel mode when KUp bit is set to 0
-    // KU/IE bit stack is pushed whenever an exception is raised and whenever
-    // an interrupted execution stream is restarted, the stack is popped.
-    if ((PROCSTATE->status & USERPON) != 0)
-    {
-        klog_print("SYScall code: ");
-        klog_print_dec((unsigned int)SYSTEMCALL_CODE);
-        syscallProgramTrap();
-    }
-
     // A SYSCALL exception numbered 1 and above occurs when the Current Process executes the SYSCALL
     // instruction and the contents of a0 is greater than or equal to 1. The Nucleus SYSCALL exception
     // handler should perform a standard Pass Up or Die operation using the GENERALEXCEPT index value
     if (SYSTEMCALL_CODE >= 1)
     {
         passUpOrDie(GENERALEXCEPT);
+    }
+
+    // Kernel mode when KUp bit is set to 0
+    // KU/IE bit stack is pushed whenever an exception is raised and whenever
+    // an interrupted execution stream is restarted, the stack is popped.
+    if ((PROCSTATE->status & USERPON) != 0)
+    {
+        syscallProgramTrap();
     }
 
     switch (SYSTEMCALL_CODE)
