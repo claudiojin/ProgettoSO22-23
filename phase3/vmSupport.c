@@ -43,10 +43,6 @@
  */
 static swap_t swap_pool_table[POOLSIZE];
 
-pcb_PTR swap_mutex_proc;
-
-pcb_PTR curr_mutex_proc = NULL;
-
 /**
  * Mutex function for the swap pool
  */
@@ -63,7 +59,7 @@ static void swap_mutex()
         }
         else
         {
-            // receive a message from curretn mutex process to release mutual exclusion
+            // receive a message from current mutex process to release mutual exclusion
             SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_mutex_proc, 0, 0);
             curr_mutex_proc = NULL;
         }
@@ -96,13 +92,10 @@ static void backingStoreOperation(int operation_command, int asid, int page_num,
     // since asid starts from 1 device number must be decremented
     dtpreg_t *flash_dev_reg = (dtpreg_t *)DEV_REG_ADDR(IL_FLASH, asid - 1);
 
-    klog_print("Frame address: ");
-    klog_print_hex(frame_address);
     // Write the flash device’s DATA0 field with the appropriate starting physical address of the 4k
     // block to be read (or written); the particular frame’s starting address
     flash_dev_reg->data0 = frame_address;
 
-    klog_print("breakpoint");
     // Initialize command value
     int command = (page_num << 8) + operation_command;
 

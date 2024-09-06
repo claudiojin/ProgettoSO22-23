@@ -194,6 +194,8 @@ void systemCallHandler()
     // an interrupted execution stream is restarted, the stack is popped.
     if ((PROCSTATE->status & USERPON) != 0)
     {
+        klog_print("SYScall code: ");
+        klog_print_dec((unsigned int)SYSTEMCALL_CODE);
         syscallProgramTrap();
     }
 

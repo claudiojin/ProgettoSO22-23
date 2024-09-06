@@ -10,6 +10,10 @@ static support_t support_arr[UPROCMAX];
  */
 static struct list_head free_support;
 
+pcb_PTR swap_mutex_proc;
+
+pcb_PTR curr_mutex_proc = NULL;
+
 /**
  * Whenever a new Support Structure is needed to support a new U-proc, a call to allocate returns a pointer to a
  * Support Structure, allocated from the free list.
@@ -56,9 +60,6 @@ memaddr getStackFrame()
     static int curr_offset = 1;
     memaddr ram_top;
     RAMTOP(ram_top);
-
-    klog_print("RAMTOP: ");
-    klog_print_hex(ram_top);
 
     // starting from third last frame
     memaddr frame_address = (ram_top - PAGESIZE) - (curr_offset * PAGESIZE);
@@ -117,6 +118,7 @@ void TerminateProc(pcb_t *arg)
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, 0, 0);
 }
 
+/** @returns the support structure for the sender process */
 support_t *GetSupportPtr()
 {
     support_t *support;
@@ -170,11 +172,12 @@ static void initSupportStructure(int asid, support_t *support)
 }
 
 /**
- * Initializes a SST thread. ASID 0 is reserved for kernel daemons.
+ * Initializes a SST thread.
  */
 static void startSSTs(int asid)
 {
     state_t sst_state;
+    support_t *support_struct = allocate();
 
     // initialize state
     STST(&sst_state);
@@ -182,8 +185,10 @@ static void startSSTs(int asid)
     sst_state.reg_sp = getStackFrame();
     sst_state.status |= EALLINTPLT;                  // all interrupts enabled + PLT enabled
     sst_state.entry_hi = (asid << ENTRYHI_ASID_BIT); // has the same asid as the child U-proc
+    // initialize support struct
+    initSupportStructure(asid, support_struct);
     // request creation to the kernel
-    CreateProcess(&sst_state, NULL);
+    CreateProcess(&sst_state, support_struct);
 }
 
 /**
@@ -191,17 +196,14 @@ static void startSSTs(int asid)
  * @param asid ASID of the U-proc to initialize.
  * @returns pcb of the User process just created.
  */
-pcb_PTR startProcess(int asid)
+pcb_PTR startProcess(int asid, support_t *sst_support)
 {
     state_t state;
-    support_t *support_struct = allocate();
 
     // initialize state
     initUProcState(asid, &state);
-    // initialize support struct
-    initSupportStructure(asid, support_struct);
-    // request creation to the kernel
-    return CreateProcess(&state, support_struct);
+    // request creation to the kernel, suuport structure shared with parent sst
+    return CreateProcess(&state, sst_support);
 }
 
 /**
@@ -219,8 +221,8 @@ void signalProcessTermination()
 void test()
 {
     // Initialize the Level 4/Phase 3 data structures.
-    initSwapStructs();
     initFreeSupportList();
+    initSwapStructs();
 
     // Initialize SST(s) with corresponding U-proc
     for (int i = 1; i <= 1; i++)

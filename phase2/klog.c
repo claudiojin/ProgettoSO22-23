@@ -99,14 +99,3 @@ static void next_line(void)
         klog_buffer[klog_line_index][i] = ' ';
     }
 }
-
-// returns the number of children of p
-int child_counter(pcb_t *p) {
-    pcb_t* pos;
-    int i = 0;
-    list_for_each_entry(pos, &(p->p_child), p_child) {
-        i++;
-    }
-
-    return i;
-}

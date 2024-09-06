@@ -1,4 +1,5 @@
 #include "./headers/sst.h"
+#include "../phase2/headers/klog.h"
 
 // child User process of this SST thread
 static pcb_t *u_proc;
@@ -114,8 +115,10 @@ void SSTRequest(pcb_t *sender, int service, void *arg)
 // System Service Thread (SST) main loop, also starts the child u-proc before entering the loop
 void SST_server()
 {
+    support_t *sst_support = GetSupportPtr();
     // start the child U-proc with the same SST asid
-    u_proc = startProcess(current_process->p_supportStruct->sup_asid);
+
+    u_proc = startProcess(sst_support->sup_asid, sst_support);
 
     while (TRUE)
     {

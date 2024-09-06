@@ -5,8 +5,10 @@
 #include "h/tconst.h"
 #include "h/print.h"
 #include "h/types.h"
+#include "../phase2/headers/klog.h"
 
-void main() {
+void main()
+{
 	print(WRITETERMINAL, "printTest is ok\n");
 	print(WRITETERMINAL, "Test Number 1 is ok\n");
 	/* Terminate normally */
@@ -17,4 +19,3 @@ void main() {
 	SYSCALL(SENDMSG, PARENT, (unsigned int)&terminate_payload, 0);
 	SYSCALL(RECEIVEMSG, 0, 0, 0);
 }
-

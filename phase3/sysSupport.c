@@ -1,4 +1,5 @@
 #include "./headers/sysSupport.h"
+#include "../phase2/headers/klog.h"
 
 /**
  * This module implements the TLB, Program Trap, and SYSCALL exception handlers.
@@ -27,7 +28,7 @@ int USendMsg(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     // send message to parent, also called SST
     if (destination == 0)
     {
-        destination = current_process->p_parent;
+        destination = sender->p_parent;
     }
 
     msg_t *message = allocMsg();
@@ -170,6 +171,9 @@ void trapExceptionHandler()
 void generalExceptionHandler()
 {
     support_t *support_structure = GetSupportPtr();
+
+    klog_print("Cause: ");
+    klog_print_dec(CAUSE_GET_EXCCODE(support_structure->sup_exceptState[GENERALEXCEPT].cause));
 
     switch (CAUSE_GET_EXCCODE(support_structure->sup_exceptState[GENERALEXCEPT].cause))
     {
