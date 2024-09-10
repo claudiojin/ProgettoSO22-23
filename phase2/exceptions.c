@@ -67,8 +67,8 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
         message->ssi_payload.service_code = cast_payload->service_code;
         message->ssi_payload.arg = cast_payload->arg;
     }
-    else if (sender == ssi_pcb)
-    { // TODO: mettere a posto questi check di puntatori inutili
+    else if (sender == ssi_pcb || destination == sender->p_parent)
+    {
         message->m_payload = *payload;
     }
     else
