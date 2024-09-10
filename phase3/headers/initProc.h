@@ -45,12 +45,10 @@ extern pcb_PTR curr_mutex_proc;
 pcb_PTR startProcess(int asid, support_t *sst_support);
 memaddr getStackFrame();
 
-support_t *GetSupportPtr();
 pcb_t *CreateProcess(state_t *state, support_t *supp);
+void UTerminate(pcb_t *u_proc);
 int DoIO(unsigned int *addr, unsigned int value);
-void TerminateProc(pcb_t *arg);
-
-void signalProcessTermination();
+support_t *GetSupportPtr();
 
 void test();
 

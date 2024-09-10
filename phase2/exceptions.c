@@ -65,8 +65,6 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     {
         ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
         message->ssi_payload.service_code = cast_payload->service_code;
-        klog_print(" SendMsg service code: ");
-        klog_print_dec(message->ssi_payload.service_code);
         message->ssi_payload.arg = cast_payload->arg;
     }
     else if (sender == ssi_pcb)

@@ -11,82 +11,36 @@ pcb_t *receive_req(ssi_payload_t *payload_address)
 }
 
 // As the SST, send a response back to U-proc after executing a service
-void send_res(pcb_t *destination, void *response)
+void send_res(void *payload)
 {
-    SYSCALL(SENDMESSAGE, (unsigned int)destination, (unsigned int)response, 0);
+    SYSCALL(SENDMESSAGE, (unsigned int)u_proc, (unsigned int)payload, 0);
 }
 
 // Function to handle the GetTOD request
 void handle_GetTOD(pcb_t *sender)
 {
-    ssi_payload_t ssi_payload = {
-        .service_code = GETTIME,
-        .arg = 0,
-    };
-
-    // Send request to SSI
-    SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
-
-    // Wait for the response from SSI
-    unsigned int tod;
-    SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&tod, 0);
+    cpu_t curr_time;
+    STCK(curr_time);
 
     // Send the TOD back to the sender
-    send_res(sender, &tod);
+    send_res(&curr_time);
 }
 
 // Function to handle the Terminate request
 void handle_Terminate(pcb_t *sender)
 {
-    ssi_payload_t ssi_payload = {
-        .service_code = TERMPROCESS,
-        .arg = (void *)sender,
-    };
-
-    // Send terminate request to SSI
-    SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
-
-    // Send termination acknowledgment to the sender
-    send_res(sender, NULL);
-
-    // Terminate the SST process
-    TerminateProcess(sender);
+    // Terminate the requesting user process
+    UTerminate(sender);
 }
 
 // Function to handle the WritePrinter request
 void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
 {
-    ssi_payload_t ssi_payload = {
-        .service_code = WRITEPRINTER,
-        .arg = (void *)print_payload,
-    };
-
-    // Send print request to SSI
-    SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
-
-    // Wait for completion acknowledgment from SSI
-    SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, 0, 0);
-
-    // Send completion acknowledgment to the sender
-    send_res(sender, NULL);
 }
 
 // Function to handle the WriteTerminal request
 void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
 {
-    ssi_payload_t ssi_payload = {
-        .service_code = WRITETERMINAL,
-        .arg = (void *)print_payload,
-    };
-
-    // Send terminal write request to SSI
-    SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)&ssi_payload, 0);
-
-    // Wait for completion acknowledgment from SSI
-    SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, 0, 0);
-
-    // Send completion acknowledgment to the sender
-    send_res(sender, NULL);
 }
 
 // Process the incoming request from the child process
@@ -115,9 +69,10 @@ void SSTRequest(pcb_t *sender, int service, void *arg)
 // System Service Thread (SST) main loop, also starts the child u-proc before entering the loop
 void SST_server()
 {
+    // SST shares the same ASID and support structure with its child U-proc.
     support_t *sst_support = GetSupportPtr();
 
-    // start the child U-proc with the same SST asid
+    // start the child U-proc with the same SST asid and support structure
     u_proc = startProcess(sst_support->sup_asid, sst_support);
 
     while (TRUE)

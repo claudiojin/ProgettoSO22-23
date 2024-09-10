@@ -38,6 +38,12 @@ static void deallocate(support_t *support_structure)
     list_add(&support_structure->s_list, &free_support);
 }
 
+// Signal test process of u-proc termination
+void signalUprocTermination()
+{
+    SYSCALL(SENDMESSAGE, (unsigned int)test_pcb, 0, 0);
+}
+
 /**
  * Initializes support structure list.
  */
@@ -118,7 +124,33 @@ void TerminateProc(pcb_t *arg)
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, 0, 0);
 }
 
-/** @returns the support structure for the sender process */
+/**
+ * @brief Terminate the User process with its SST.
+ *
+ * This function frees the frames associated with the given ASID,
+ * signals the termination of the process, and terminates the process.
+ *
+ * @param support_struct Pointer to the support structure.
+ */
+void UTerminate(pcb_t *u_proc)
+{
+    if (u_proc->p_supportStruct == NULL)
+    {
+        klog_print("USER support struct is null while terminating!");
+    }
+
+    freeFrames(u_proc->p_supportStruct->sup_asid);
+
+    // Whenever a U-proc terminates, a call is made to deallocate to return the Support Structure to the free list.
+    deallocate(u_proc->p_supportStruct);
+
+    signalUprocTermination();
+
+    // terminates this u-proc sst consequently killing its progeny (the child u-proc)
+    TerminateProc(u_proc->p_parent);
+}
+
+/** @returns the support structure for the current process */
 support_t *GetSupportPtr()
 {
     support_t *support;
@@ -207,15 +239,6 @@ pcb_PTR startProcess(int asid, support_t *sst_support)
 }
 
 /**
- * Whenever a U-proc terminates, a call is made to deallocate to return the Support Structure to the free list.
- * Must be called while terminating a U-proc.
- */
-void signalProcessTermination()
-{
-    deallocate(GetSupportPtr());
-}
-
-/**
  * Test Process
  */
 void test()
@@ -235,7 +258,6 @@ void test()
     {
         // Test process will wake up UPROCMAX times
         SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-        signalProcessTermination();
     }
 
     SYSCALL(TERMPROCESS, 0, 0, 0);
