@@ -12,7 +12,7 @@
  * SendMessage Syscall wrapper for support level
  * TODO: trovare un modo per avere il puntatore al padre senza utilizzare il current proc
  */
-int USendMsg(pcb_t *destination, unsigned int payload)
+int USendMsg(pcb_t *destination, unsigned int *payload)
 {
     // send message to parent, also called SST
     if (destination == 0)
@@ -20,12 +20,18 @@ int USendMsg(pcb_t *destination, unsigned int payload)
         destination = current_process->p_parent;
     }
 
-    return SYSCALL(SENDMESSAGE, (unsigned int)destination, payload, 0);
+    ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
+
+    klog_print("U-SYSCALL service code: ");
+    klog_print_dec(cast_payload->service_code);
+
+    // U-proc always sends an ssi_payload_t struct pointer
+    return SYSCALL(SENDMESSAGE, (unsigned int)destination, (unsigned int)payload, 0);
 }
 
-pcb_t *UReceiveMsg(pcb_t *sender, unsigned int payload)
+pcb_t *UReceiveMsg(pcb_t *sender, unsigned int *payload)
 {
-    return (pcb_PTR)SYSCALL(RECEIVEMESSAGE, payload, 0, 0);
+    return (pcb_PTR)SYSCALL(RECEIVEMESSAGE, (unsigned int)payload, 0, 0);
 }
 
 /**
@@ -37,10 +43,10 @@ static void SuppSystemcallHandler(support_t *support_structure)
     switch (SUP_SYSCALL_CODE(support_structure))
     {
     case 1:
-        SUP_PROC_STATE(support_structure).reg_v0 = (unsigned int)USendMsg((pcb_t *)SUP_PROC_STATE(support_structure).reg_a1, (unsigned int)SUP_PROC_STATE(support_structure).reg_a2);
+        SUP_PROC_STATE(support_structure).reg_v0 = (unsigned int)USendMsg((pcb_t *)SUP_PROC_STATE(support_structure).reg_a1, (unsigned int *)SUP_PROC_STATE(support_structure).reg_a2);
         break;
     case 2:
-        SUP_PROC_STATE(support_structure).reg_v0 = (unsigned int)UReceiveMsg((pcb_t *)SUP_PROC_STATE(support_structure).reg_a1, (unsigned int)SUP_PROC_STATE(support_structure).reg_a2);
+        SUP_PROC_STATE(support_structure).reg_v0 = (unsigned int)UReceiveMsg((pcb_t *)SUP_PROC_STATE(support_structure).reg_a1, (unsigned int *)SUP_PROC_STATE(support_structure).reg_a2);
         break;
     default:
         trapExceptionHandler();
