@@ -36,16 +36,57 @@ void handle_Terminate(pcb_t *sender)
 // Function to handle the WritePrinter request
 void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
 {
+    char *string = print_payload->string;
+    dtpreg_t *dev_reg = (dtpreg_t *)DEV_REG_ADDR(6, sender->p_supportStruct->sup_asid - 1);
+
+    klog_print(print_payload->string);
+    klog_print_dec(print_payload->length);
+
+    for (int i = 0; i < print_payload->length; i++)
+    {
+        dev_reg->data0 = *string;
+        int status = DoIO(&dev_reg->command, PRINTCHR);
+
+        if (status != OK)
+        {
+            klog_print("Char not transmitted correctly");
+            break;
+        }
+        string++;
+    }
 }
 
 // Function to handle the WriteTerminal request
 void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
 {
+    char *string = print_payload->string;
+    termreg_t *terminal = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, sender->p_supportStruct->sup_asid - 1);
+
+    klog_print(print_payload->string);
+    klog_print_dec(print_payload->length);
+
+    // Scrittura carattere per carattere
+    for (int i = 0; i < print_payload->length; i++)
+    {
+        unsigned int value = PRINTCHR + ((*string) << 8);
+        int status = DoIO(&terminal->transm_command, value);
+        if (TERMINAL_STATUS(status) != OKCHARTRANS)
+        {
+            klog_print("Char not transmitted correctly");
+            break;
+        }
+        string++;
+    }
+
+    send_res(NULL);
 }
 
 // Process the incoming request from the child process
-void SSTRequest(pcb_t *sender, int service, void *arg)
+void SSTRequest(pcb_t *sender, int service, sst_print_t *arg)
 {
+    klog_print(" service code SST: ");
+    klog_print_dec(service);
+
     switch (service)
     {
     case GET_TOD:
@@ -55,10 +96,10 @@ void SSTRequest(pcb_t *sender, int service, void *arg)
         handle_Terminate(sender);
         break;
     case WRITEPRINTER:
-        handle_WritePrinter(sender, (sst_print_t *)arg);
+        handle_WritePrinter(sender, arg);
         break;
     case WRITETERMINAL:
-        handle_WriteTerminal(sender, (sst_print_t *)arg);
+        handle_WriteTerminal(sender, arg);
         break;
     default:
         // Invalid service code, terminate the process
@@ -83,11 +124,8 @@ void SST_server()
         // Receive a request from the SST's inbox
         sender = receive_req(&payload);
 
-        klog_print(" service code SST: ");
-        klog_print_dec(payload.service_code);
-
         if (sender == u_proc)
             // Process the request based on the service code
-            SSTRequest(sender, payload.service_code, payload.arg);
+            SSTRequest(sender, payload.service_code, (sst_print_t *)payload.arg);
     }
 }

@@ -24,7 +24,7 @@ void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload);
 void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload);
 
 // Function to process incoming requests
-void SSTRequest(pcb_t *sender, int service, void *arg);
+void SSTRequest(pcb_t *sender, int service, sst_print_t *arg);
 
 // Main server loop for SST
 void SST_server();
