@@ -40,6 +40,13 @@ void uTLB_RefillHandler()
  * @param sender sender process
  * @returns 0 when successful, -2 when the pcb is not available, default error is -1
  */
+/**
+ * This system call causes the transmission of a message to a specified process. This is an asynchronous operation
+ * @param destination destination process
+ * @param payload payload of the message to send: either a char*, an ssi_payload_t* or 0
+ * @param sender sender process
+ * @returns 0 when successful, -2 when the pcb is not available, default error is -1
+ */
 int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
 {
     if (destination == NULL)
@@ -67,7 +74,7 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
         message->ssi_payload.service_code = cast_payload->service_code;
         message->ssi_payload.arg = cast_payload->arg;
     }
-    else if (sender == ssi_pcb || destination == sender->p_parent)
+    else if (sender == ssi_pcb)
     {
         message->m_payload = *payload;
     }

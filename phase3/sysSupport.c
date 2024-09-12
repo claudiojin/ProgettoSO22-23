@@ -20,11 +20,6 @@ int USendMsg(pcb_t *destination, unsigned int *payload)
         destination = current_process->p_parent;
     }
 
-    ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
-
-    klog_print("U-SYSCALL service code: ");
-    klog_print_dec(cast_payload->service_code);
-
     // U-proc always sends an ssi_payload_t struct pointer
     return SYSCALL(SENDMESSAGE, (unsigned int)destination, (unsigned int)payload, 0);
 }

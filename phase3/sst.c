@@ -22,6 +22,9 @@ void handle_GetTOD(pcb_t *sender)
     cpu_t curr_time;
     STCK(curr_time);
 
+    klog_print("Curr Time: ");
+    klog_print_dec(curr_time);
+
     // Send the TOD back to the sender
     send_res(&curr_time);
 }
@@ -39,6 +42,7 @@ void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
     char *string = print_payload->string;
     dtpreg_t *dev_reg = (dtpreg_t *)DEV_REG_ADDR(6, sender->p_supportStruct->sup_asid - 1);
 
+    klog_print("Printer: ");
     klog_print(print_payload->string);
     klog_print_dec(print_payload->length);
 
@@ -62,6 +66,7 @@ void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
     char *string = print_payload->string;
     termreg_t *terminal = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, sender->p_supportStruct->sup_asid - 1);
 
+    klog_print("Terminal write: ");
     klog_print(print_payload->string);
     klog_print_dec(print_payload->length);
 
