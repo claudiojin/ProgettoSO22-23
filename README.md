@@ -14,5 +14,8 @@ L'accesso alle risorse avviene tramite message passing. I Message Blocks (msg) r
 La seconda fase del progetto PandOS+ consiste nell’implementazione del livello 3 dell’architettura astratta di un sistema operativo proposta da Dijkstra. In particolare è necessario implementare le funzionalità del kernel per l’inizializzazione del sistema, la schedulazione dei processi e la gestione delle eccezioni.
 Per maggiori dettagli consultare la relazione nella cartella "documentation".
 
+# Fase 3 
+In questa fase si implementa il livello supporto (livello 4) del sistema operativo per creare un ambiente di esecuzione per i processi User. Questo viene realizzato grazie all'aggiunta di 2 funzionalità : supporto per la memoria virtuale(eccezioni TLB) e supporto per device di I/O quali stampanti e terminali. Per maggiori dettagli consultare la relazione nella cartella "documentation".x
+
 # Come compilare
-Lanciare make dalla directory del progetto, dopodichè lanciare umps3. Il file che configura la macchina da selezionare su umps3 è già presente: "pandos".
+Lanciare make dalla directory del progetto e nella cartella /testers, dopodichè lanciare umps3. Il file che configura la macchina da selezionare su umps3 è già presente: "pandos".

@@ -42,9 +42,9 @@ void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
     char *string = print_payload->string;
     dtpreg_t *dev_reg = (dtpreg_t *)DEV_REG_ADDR(6, sender->p_supportStruct->sup_asid - 1);
 
-    klog_print("Printer: ");
-    klog_print(print_payload->string);
-    klog_print_dec(print_payload->length);
+    // Gain mutual exclusion
+    SYSCALL(SENDMESSAGE, (unsigned int)printer_mutex_proc[sender->p_supportStruct->sup_asid - 1], 0, 0);
+    SYSCALL(RECEIVEMESSAGE, (unsigned int)printer_mutex_proc[sender->p_supportStruct->sup_asid - 1], 0, 0);
 
     for (int i = 0; i < print_payload->length; i++)
     {
@@ -58,23 +58,33 @@ void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
         }
         string++;
     }
+
+    SYSCALL(SENDMESSAGE, (unsigned int)printer_mutex_proc[sender->p_supportStruct->sup_asid - 1], 0, 0);
+
+    send_res(NULL);
 }
 
 // Function to handle the WriteTerminal request
 void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
 {
     char *string = print_payload->string;
+    int length = print_payload->length;
     termreg_t *terminal = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, sender->p_supportStruct->sup_asid - 1);
 
-    klog_print("Terminal write: ");
-    klog_print(print_payload->string);
-    klog_print_dec(print_payload->length);
+    klog_print("SST [String, length]: ");
+    klog_print(string);
+    klog_print(", ");
+    klog_print_dec(length);
 
-    // Scrittura carattere per carattere
-    for (int i = 0; i < print_payload->length; i++)
+    SYSCALL(SENDMESSAGE, (unsigned int)terminal_mutex_proc[sender->p_supportStruct->sup_asid - 1], 0, 0);
+    SYSCALL(RECEIVEMESSAGE, (unsigned int)terminal_mutex_proc[sender->p_supportStruct->sup_asid - 1], 0, 0);
+
+    // letter for letter transimssion
+    for (int i = 0; i < length; i++)
     {
         unsigned int value = PRINTCHR + ((*string) << 8);
         int status = DoIO(&terminal->transm_command, value);
+
         if (TERMINAL_STATUS(status) != OKCHARTRANS)
         {
             klog_print("Char not transmitted correctly");
@@ -82,6 +92,8 @@ void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
         }
         string++;
     }
+
+    SYSCALL(SENDMESSAGE, (unsigned int)terminal_mutex_proc[sender->p_supportStruct->sup_asid - 1], 0, 0);
 
     send_res(NULL);
 }

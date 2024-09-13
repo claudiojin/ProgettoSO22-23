@@ -5,7 +5,6 @@
 #include "h/tconst.h"
 #include "h/print.h"
 #include "h/types.h"
-#include "../phase2/headers/klog.h"
 
 void main()
 {

@@ -1,10 +1,6 @@
 #ifndef PANDOS_VMSUPPORT_H_INCLUDED
 #define PANDOS_VMSUPPORT_H_INCLUDED
 
-#include "../../headers/listx.h"
-#include "../../headers/const.h"
-#include "../../headers/types.h"
-#include "../../phase2/headers/initial.h"
 #include "./initProc.h"
 
 void initSwapStructs();

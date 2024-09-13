@@ -36,11 +36,18 @@ basic version of the Support Level will use each U-proc’s flash device as its 
  * message to this process to release the mutual exclusion
  */
 extern pcb_PTR swap_mutex_proc;
-
 /**
  * Process currently accessing the mutually exclusive swap pool
  */
 extern pcb_PTR curr_mutex_proc;
+
+// Pcb of device mutex processes
+extern pcb_PTR terminal_mutex_proc[UPROCMAX];
+extern pcb_PTR printer_mutex_proc[UPROCMAX];
+
+// Current process accessing in mutex the corresponding device
+extern pcb_PTR curr_terminal_mutex[UPROCMAX];
+extern pcb_PTR curr_printer_mutex[UPROCMAX];
 
 pcb_PTR startProcess(int asid, support_t *sst_support);
 memaddr getStackFrame();

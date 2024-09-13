@@ -53,9 +53,9 @@ static void swap_mutex()
         if (curr_mutex_proc == NULL)
         {
             // receive request for mutual exclusion from a process
-            pcb_PTR sender = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
+            curr_mutex_proc = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
             // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)sender, 0, 0);
+            SYSCALL(SENDMESSAGE, (unsigned int)curr_mutex_proc, 0, 0);
         }
         else
         {
@@ -347,6 +347,8 @@ void initSwapStructs()
 
     // create swap mutex process
     swap_mutex_proc = CreateProcess(&swap_mutex_state, NULL);
+
+    curr_mutex_proc = NULL;
 
     // initialize swap pool table
     for (int i = 0; i < POOLSIZE; i++)

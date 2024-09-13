@@ -26,7 +26,7 @@ int USendMsg(pcb_t *destination, unsigned int *payload)
 
 pcb_t *UReceiveMsg(pcb_t *sender, unsigned int *payload)
 {
-    return (pcb_PTR)SYSCALL(RECEIVEMESSAGE, (unsigned int)payload, 0, 0);
+    return (pcb_PTR)SYSCALL(RECEIVEMESSAGE, (unsigned int)sender, (unsigned int)payload, 0);
 }
 
 /**

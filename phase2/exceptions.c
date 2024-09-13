@@ -40,13 +40,6 @@ void uTLB_RefillHandler()
  * @param sender sender process
  * @returns 0 when successful, -2 when the pcb is not available, default error is -1
  */
-/**
- * This system call causes the transmission of a message to a specified process. This is an asynchronous operation
- * @param destination destination process
- * @param payload payload of the message to send: either a char*, an ssi_payload_t* or 0
- * @param sender sender process
- * @returns 0 when successful, -2 when the pcb is not available, default error is -1
- */
 int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
 {
     if (destination == NULL)
@@ -68,13 +61,13 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
     message->m_sender = sender;
 
     // payload handling, for now these are the types of messages we deal with, might change in phase 3
-    if (destination == ssi_pcb)
+    if (destination == ssi_pcb || (destination == sender->p_parent && sender->p_supportStruct->sup_asid == destination->p_supportStruct->sup_asid))
     {
         ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
         message->ssi_payload.service_code = cast_payload->service_code;
         message->ssi_payload.arg = cast_payload->arg;
     }
-    else if (sender == ssi_pcb)
+    else if (sender == ssi_pcb || (sender == destination->p_parent && sender->p_supportStruct->sup_asid == destination->p_supportStruct->sup_asid))
     {
         message->m_payload = *payload;
     }
@@ -131,7 +124,7 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
     // update the payload if needed
     if (payload != NULL)
     {
-        if (current_process == ssi_pcb)
+        if (msg_extracted->ssi_payload.service_code != -1)
         {
             ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
 
