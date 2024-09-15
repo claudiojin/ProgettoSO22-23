@@ -33,6 +33,26 @@ void uTLB_RefillHandler()
     LDST(PROCSTATE);
 }
 
+static int is_Uproc_to_SST(pcb_PTR destination, pcb_PTR sender)
+{
+    // check if sender and parent have support structures
+    if (destination->p_supportStruct != NULL && sender->p_supportStruct != NULL)
+        // check if it's User process sending to its SST
+        return destination == sender->p_parent && sender->p_supportStruct->sup_asid == destination->p_supportStruct->sup_asid;
+    else
+        return FALSE;
+}
+
+static int is_SST_to_Uproc(pcb_PTR destination, pcb_PTR sender)
+{
+    // check if sender and parent have support structures
+    if (destination->p_supportStruct != NULL && sender->p_supportStruct != NULL)
+        // check if it's SST sending to its Uproc
+        return sender == destination->p_parent && sender->p_supportStruct->sup_asid == destination->p_supportStruct->sup_asid;
+    else
+        return FALSE;
+}
+
 /**
  * This system call causes the transmission of a message to a specified process. This is an asynchronous operation
  * @param destination destination process
@@ -60,14 +80,17 @@ int SendMessage(pcb_t *destination, unsigned int *payload, pcb_t *sender)
 
     message->m_sender = sender;
 
-    // payload handling, for now these are the types of messages we deal with, might change in phase 3
-    if (destination == ssi_pcb || (destination == sender->p_parent && sender->p_supportStruct->sup_asid == destination->p_supportStruct->sup_asid))
+    // payload handling
+    // Added case of U-proc sending message to SST
+    if (destination == ssi_pcb || is_Uproc_to_SST(destination, sender))
     {
+        // Loading message ssi payload
         ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
         message->ssi_payload.service_code = cast_payload->service_code;
         message->ssi_payload.arg = cast_payload->arg;
     }
-    else if (sender == ssi_pcb || (sender == destination->p_parent && sender->p_supportStruct->sup_asid == destination->p_supportStruct->sup_asid))
+    // Added case of SST sending message to U-proc
+    else if (sender == ssi_pcb || is_SST_to_Uproc(destination, sender))
     {
         message->m_payload = *payload;
     }
@@ -116,18 +139,20 @@ pcb_t *ReceiveMessage(pcb_t *sender, unsigned int *payload)
     {
         msg_extracted = popMessage(&current_process->msg_inbox, sender);
     }
+
     // wait for the specified message
     if (msg_extracted == NULL)
     {
         blockProcess(PROCSTATE, SEMDEVLEN);
     }
+
     // update the payload if needed
     if (payload != NULL)
     {
         if (msg_extracted->ssi_payload.service_code != -1)
         {
+            // Unloading message ssi payload
             ssi_payload_PTR cast_payload = (ssi_payload_PTR)payload;
-
             cast_payload->service_code = msg_extracted->ssi_payload.service_code;
             cast_payload->arg = msg_extracted->ssi_payload.arg;
         }

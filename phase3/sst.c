@@ -71,11 +71,6 @@ void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
     int length = print_payload->length;
     termreg_t *terminal = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, sender->p_supportStruct->sup_asid - 1);
 
-    klog_print("SST [String, length]: ");
-    klog_print(string);
-    klog_print(", ");
-    klog_print_dec(length);
-
     SYSCALL(SENDMESSAGE, (unsigned int)terminal_mutex_proc[sender->p_supportStruct->sup_asid - 1], 0, 0);
     SYSCALL(RECEIVEMESSAGE, (unsigned int)terminal_mutex_proc[sender->p_supportStruct->sup_asid - 1], 0, 0);
 
@@ -101,9 +96,6 @@ void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
 // Process the incoming request from the child process
 void SSTRequest(pcb_t *sender, int service, sst_print_t *arg)
 {
-    klog_print(" service code SST: ");
-    klog_print_dec(service);
-
     switch (service)
     {
     case GET_TOD:
@@ -131,7 +123,7 @@ void SST_server()
     support_t *sst_support = GetSupportPtr();
 
     // start the child U-proc with the same SST asid and support structure
-    u_proc = startProcess(sst_support->sup_asid, sst_support);
+    u_proc = startUProcess(sst_support->sup_asid, sst_support);
 
     while (TRUE)
     {

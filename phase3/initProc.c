@@ -1,5 +1,4 @@
 #include "./headers/initProc.h"
-#include "../phase2/headers/klog.h"
 
 // TODO: finire di sistemare le print, controllare il payload nella sendmessage quando l'sst invia
 // un payload al u-proc.
@@ -16,342 +15,11 @@ static struct list_head free_support;
 pcb_PTR swap_mutex_proc;
 pcb_PTR curr_mutex_proc;
 
-static void **terminal_mutex[UPROCMAX];
-static void **printer_mutex[UPROCMAX];
-
 pcb_PTR terminal_mutex_proc[UPROCMAX];
 pcb_PTR printer_mutex_proc[UPROCMAX];
 
 pcb_PTR curr_terminal_mutex[UPROCMAX];
 pcb_PTR curr_printer_mutex[UPROCMAX];
-
-// grants mutual exclusion while using terminals and printers
-static void terminal_mutex_1()
-{
-    while (TRUE)
-    {
-        if (curr_terminal_mutex[0] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_terminal_mutex[0] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_terminal_mutex[0], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_terminal_mutex[0], 0, 0);
-            curr_terminal_mutex[0] = NULL;
-        }
-    }
-};
-
-// grants mutual exclusion while using terminals and printers
-static void terminal_mutex_2()
-{
-    while (TRUE)
-    {
-        if (curr_terminal_mutex[1] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_terminal_mutex[1] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_terminal_mutex[1], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_terminal_mutex[1], 0, 0);
-            curr_terminal_mutex[1] = NULL;
-        }
-    }
-};
-
-// grants mutual exclusion while using terminals and printers
-static void terminal_mutex_3()
-{
-    while (TRUE)
-    {
-        if (curr_terminal_mutex[2] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_terminal_mutex[2] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_terminal_mutex[2], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_terminal_mutex[2], 0, 0);
-            curr_terminal_mutex[2] = NULL;
-        }
-    }
-};
-
-// grants mutual exclusion while using terminals and printers
-static void terminal_mutex_4()
-{
-    while (TRUE)
-    {
-        if (curr_terminal_mutex[3] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_terminal_mutex[3] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_terminal_mutex[3], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_terminal_mutex[3], 0, 0);
-            curr_terminal_mutex[3] = NULL;
-        }
-    }
-};
-
-// grants mutual exclusion while using terminals and printers
-static void terminal_mutex_5()
-{
-    while (TRUE)
-    {
-        if (curr_terminal_mutex[4] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_terminal_mutex[4] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_terminal_mutex[4], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_terminal_mutex[4], 0, 0);
-            curr_terminal_mutex[4] = NULL;
-        }
-    }
-};
-
-// grants mutual exclusion while using terminals and printers
-static void terminal_mutex_6()
-{
-    while (TRUE)
-    {
-        if (curr_terminal_mutex[5] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_terminal_mutex[5] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_terminal_mutex[5], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_terminal_mutex[5], 0, 0);
-            curr_terminal_mutex[5] = NULL;
-        }
-    }
-};
-
-// grants mutual exclusion while using terminals and printers
-static void terminal_mutex_7()
-{
-    while (TRUE)
-    {
-        if (curr_terminal_mutex[6] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_terminal_mutex[6] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_terminal_mutex[6], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_terminal_mutex[6], 0, 0);
-            curr_terminal_mutex[6] = NULL;
-        }
-    }
-};
-
-// grants mutual exclusion while using terminals and printers
-static void terminal_mutex_8()
-{
-    while (TRUE)
-    {
-        if (curr_terminal_mutex[7] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_terminal_mutex[7] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_terminal_mutex[7], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_terminal_mutex[7], 0, 0);
-            curr_terminal_mutex[7] = NULL;
-        }
-    }
-};
-
-static void printer_mutex_1()
-{
-    while (TRUE)
-    {
-        if (curr_printer_mutex[0] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_printer_mutex[0] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_printer_mutex[0], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_printer_mutex[0], 0, 0);
-            curr_printer_mutex[0] = NULL;
-        }
-    }
-}
-
-static void printer_mutex_2()
-{
-    while (TRUE)
-    {
-        if (curr_printer_mutex[1] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_printer_mutex[1] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_printer_mutex[1], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_printer_mutex[1], 0, 0);
-            curr_printer_mutex[1] = NULL;
-        }
-    }
-}
-
-static void printer_mutex_3()
-{
-    while (TRUE)
-    {
-        if (curr_printer_mutex[2] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_printer_mutex[2] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_printer_mutex[2], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_printer_mutex[2], 0, 0);
-            curr_printer_mutex[2] = NULL;
-        }
-    }
-}
-
-static void printer_mutex_4()
-{
-    while (TRUE)
-    {
-        if (curr_printer_mutex[3] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_printer_mutex[3] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_printer_mutex[3], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_printer_mutex[3], 0, 0);
-            curr_printer_mutex[3] = NULL;
-        }
-    }
-}
-
-static void printer_mutex_5()
-{
-    while (TRUE)
-    {
-        if (curr_printer_mutex[4] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_printer_mutex[4] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_printer_mutex[4], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_printer_mutex[4], 0, 0);
-            curr_printer_mutex[4] = NULL;
-        }
-    }
-}
-
-static void printer_mutex_6()
-{
-    while (TRUE)
-    {
-        if (curr_printer_mutex[5] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_printer_mutex[5] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_printer_mutex[5], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_printer_mutex[5], 0, 0);
-            curr_printer_mutex[5] = NULL;
-        }
-    }
-}
-
-static void printer_mutex_7()
-{
-    while (TRUE)
-    {
-        if (curr_printer_mutex[6] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_printer_mutex[6] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_printer_mutex[6], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_printer_mutex[6], 0, 0);
-            curr_printer_mutex[6] = NULL;
-        }
-    }
-}
-
-static void printer_mutex_8()
-{
-    while (TRUE)
-    {
-        if (curr_printer_mutex[7] == NULL)
-        {
-            // receive request for mutual exclusion from a process
-            curr_printer_mutex[7] = (pcb_PTR)SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);
-            // send a message back to sender to notify it
-            SYSCALL(SENDMESSAGE, (unsigned int)curr_printer_mutex[7], 0, 0);
-        }
-        else
-        {
-            // receive a message from current mutex process to release mutual exclusion
-            SYSCALL(RECEIVEMESSAGE, (unsigned int)curr_printer_mutex[7], 0, 0);
-            curr_printer_mutex[7] = NULL;
-        }
-    }
-}
 
 /**
  * Whenever a new Support Structure is needed to support a new U-proc, a call to allocate returns a pointer to a
@@ -377,12 +45,6 @@ static void deallocate(support_t *support_structure)
     list_add(&support_structure->s_list, &free_support);
 }
 
-// Signal test process of u-proc termination
-void signalUprocTermination()
-{
-    SYSCALL(SENDMESSAGE, (unsigned int)test_pcb, 0, 0);
-}
-
 /**
  * Initializes support structure list.
  */
@@ -395,32 +57,6 @@ static void initFreeSupportList()
     {
         deallocate(&support_arr[i]);
     }
-}
-
-static void initPrinterMutex(int asid)
-{
-    state_t device_mutex_state;
-
-    STST(&device_mutex_state);
-    device_mutex_state.reg_sp = getStackFrame();
-    device_mutex_state.pc_epc = (memaddr)printer_mutex[asid - 1];
-    device_mutex_state.status |= EALLINTPLT; // all interrupts enabled + PLT enabled
-
-    // create PRINTER mutex process
-    printer_mutex_proc[asid - 1] = CreateProcess(&device_mutex_state, NULL);
-}
-
-static void initTerminalMutex(int asid)
-{
-    state_t device_mutex_state;
-
-    STST(&device_mutex_state);
-    device_mutex_state.reg_sp = getStackFrame();
-    device_mutex_state.pc_epc = (memaddr)terminal_mutex[asid - 1];
-    device_mutex_state.status |= EALLINTPLT; // all interrupts enabled + PLT enabled
-
-    // create TERMINAL mutex process
-    terminal_mutex_proc[asid - 1] = CreateProcess(&device_mutex_state, NULL);
 }
 
 /**
@@ -439,6 +75,12 @@ memaddr getStackFrame()
     return frame_address;
 }
 
+/**
+ * Requests a DOIO to the SSI
+ * @param addr COMMAND field address of the device register
+ * @param value value to put in the device COMMAND field
+ * @returns DOIO operation status
+ */
 int DoIO(unsigned int *addr, unsigned int value)
 {
     int status;
@@ -456,7 +98,8 @@ int DoIO(unsigned int *addr, unsigned int value)
     return status;
 }
 
-/** Requests a CreateProcess service directly to the SSI
+/**
+ * Requests a CreateProcess service directly to the SSI
  * @param state Pointer to the initial processor state for the U-proc
  * @param supp Pointer to an initialized Support Structure for the U-proc
  */
@@ -479,7 +122,7 @@ pcb_t *CreateProcess(state_t *state, support_t *supp)
 /**
  * @param arg process to terminate
  */
-void TerminateProc(pcb_t *arg)
+static void TerminateProc(pcb_t *arg)
 {
     ssi_payload_t term_process_payload = {
         .service_code = TERMPROCESS,
@@ -487,6 +130,12 @@ void TerminateProc(pcb_t *arg)
     };
     SYSCALL(SENDMESSAGE, (unsigned int)ssi_pcb, (unsigned int)(&term_process_payload), 0);
     SYSCALL(RECEIVEMESSAGE, (unsigned int)ssi_pcb, 0, 0);
+}
+
+// Signal test process of u-proc termination
+static void signalUprocTermination()
+{
+    SYSCALL(SENDMESSAGE, (unsigned int)test_pcb, 0, 0);
 }
 
 /**
@@ -501,7 +150,7 @@ void UTerminate(pcb_t *u_proc)
 {
     if (u_proc->p_supportStruct == NULL)
     {
-        // klog_print("USER support struct is null while terminating!");
+        return;
     }
 
     freeFrames(u_proc->p_supportStruct->sup_asid);
@@ -515,7 +164,9 @@ void UTerminate(pcb_t *u_proc)
     TerminateProc(u_proc->p_parent);
 }
 
-/** @returns the support structure for the current process */
+/**
+ *  @returns the support structure for the current process
+ */
 support_t *GetSupportPtr()
 {
     support_t *support;
@@ -593,7 +244,7 @@ static void startSSTs(int asid)
  * @param asid ASID of the U-proc to initialize.
  * @returns pcb of the User process just created.
  */
-pcb_PTR startProcess(int asid, support_t *sst_support)
+pcb_PTR startUProcess(int asid, support_t *sst_support)
 {
     state_t state;
 
@@ -601,27 +252,6 @@ pcb_PTR startProcess(int asid, support_t *sst_support)
     initUProcState(asid, &state);
     // request creation to the kernel, suuport structure shared with parent sst
     return CreateProcess(&state, sst_support);
-}
-
-static void assignMutexFunctions()
-{
-    printer_mutex[0] = (void *)&printer_mutex_1;
-    printer_mutex[1] = (void *)&printer_mutex_2;
-    printer_mutex[2] = (void *)&printer_mutex_3;
-    printer_mutex[3] = (void *)&printer_mutex_4;
-    printer_mutex[4] = (void *)&printer_mutex_5;
-    printer_mutex[5] = (void *)&printer_mutex_6;
-    printer_mutex[6] = (void *)&printer_mutex_7;
-    printer_mutex[7] = (void *)&printer_mutex_8;
-
-    terminal_mutex[0] = (void *)&terminal_mutex_1;
-    terminal_mutex[1] = (void *)&terminal_mutex_2;
-    terminal_mutex[2] = (void *)&terminal_mutex_3;
-    terminal_mutex[3] = (void *)&terminal_mutex_4;
-    terminal_mutex[4] = (void *)&terminal_mutex_5;
-    terminal_mutex[5] = (void *)&terminal_mutex_6;
-    terminal_mutex[6] = (void *)&terminal_mutex_7;
-    terminal_mutex[7] = (void *)&terminal_mutex_8;
 }
 
 /**
@@ -632,10 +262,9 @@ void test()
     // Initialize the Level 4/Phase 3 data structures.
     initFreeSupportList();
     initSwapStructs();
-    assignMutexFunctions();
 
     // Initialize SST(s) with corresponding U-proc + Device mutex processes
-    for (int i = 1; i <= UPROCMAX; i++)
+    for (int i = 1; i <= 1; i++)
     {
         initPrinterMutex(i);
         initTerminalMutex(i);
@@ -643,7 +272,7 @@ void test()
     }
 
     // Wait for all U-proc termination,
-    for (int i = 0; i < UPROCMAX; i++)
+    for (int i = 0; i < 1; i++)
     {
         // Test process will wake up UPROCMAX times
         SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);

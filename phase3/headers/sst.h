@@ -1,7 +1,6 @@
 #ifndef SST_H
 #define SST_H
 
-#include "../../phase2/headers/initial.h"
 #include "./initProc.h"
 
 // Service codes for SST

@@ -5,6 +5,7 @@
 #include "./vmSupport.h"
 #include "./sst.h"
 #include "./sysSupport.h"
+#include "./deviceMutex.h"
 
 /**
  - One Page Table per U-proc. A μPandOS Page Table will be an array of 32 Page Table entries.
@@ -49,7 +50,7 @@ extern pcb_PTR printer_mutex_proc[UPROCMAX];
 extern pcb_PTR curr_terminal_mutex[UPROCMAX];
 extern pcb_PTR curr_printer_mutex[UPROCMAX];
 
-pcb_PTR startProcess(int asid, support_t *sst_support);
+pcb_PTR startUProcess(int asid, support_t *sst_support);
 memaddr getStackFrame();
 
 pcb_t *CreateProcess(state_t *state, support_t *supp);
