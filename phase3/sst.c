@@ -22,9 +22,6 @@ void handle_GetTOD(pcb_t *sender)
     cpu_t curr_time;
     STCK(curr_time);
 
-    klog_print("Curr Time: ");
-    klog_print_dec(curr_time);
-
     // Send the TOD back to the sender
     send_res(&curr_time);
 }
@@ -53,7 +50,6 @@ void handle_WritePrinter(pcb_t *sender, sst_print_t *print_payload)
 
         if (status != OK)
         {
-            klog_print("Char not transmitted correctly");
             break;
         }
         string++;
@@ -82,7 +78,6 @@ void handle_WriteTerminal(pcb_t *sender, sst_print_t *print_payload)
 
         if (TERMINAL_STATUS(status) != OKCHARTRANS)
         {
-            klog_print("Char not transmitted correctly");
             break;
         }
         string++;

@@ -3,7 +3,12 @@
 
 #include "./initProc.h"
 
+/**
+ * This module implements the TLB, Program Trap, and SYSCALL exception handlers.
+ */
+
 void generalExceptionHandler();
+
 void trapExceptionHandler();
 
 #endif

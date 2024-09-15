@@ -1,15 +1,6 @@
 #include "./headers/vmSupport.h"
 #include "../phase2/headers/klog.h"
 
-/**  This module implements The Pager.
- * Since reading and writing to each U-proc’s flash device is limited to supporting paging, this module should
- * also contain the function(s) for reading and writing flash devices.
- * Additionally, the Swap Pool table is local to this module.
- * Instead of declaring them globally in initProc.c they can be declared module-wide in vmSupport.c.
- * The test function will now invoke a new “public” function initSwapStructs which will do the work of initializing
- * the Swap Pool table.
- */
-
 /**
  * Address (virtual) for the start of the .data area. The .data area is placed immediately after the .text area at the
  * start of a 4KB block, i.e. .text Start Addr. + .text File Size
@@ -252,7 +243,7 @@ static void TLBInvalidHandler(support_t *support_structure)
 }
 
 /**
- * @brief Gestore delle eccezioni TLB.
+ * General TLB handler
  */
 void TLBExceptionHandler()
 {

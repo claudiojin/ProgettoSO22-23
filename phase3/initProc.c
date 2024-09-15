@@ -264,7 +264,7 @@ void test()
     initSwapStructs();
 
     // Initialize SST(s) with corresponding U-proc + Device mutex processes
-    for (int i = 1; i <= 1; i++)
+    for (int i = 1; i <= UPROCMAX; i++)
     {
         initPrinterMutex(i);
         initTerminalMutex(i);
@@ -272,7 +272,7 @@ void test()
     }
 
     // Wait for all U-proc termination,
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < UPROCMAX; i++)
     {
         // Test process will wake up UPROCMAX times
         SYSCALL(RECEIVEMESSAGE, ANYMESSAGE, 0, 0);

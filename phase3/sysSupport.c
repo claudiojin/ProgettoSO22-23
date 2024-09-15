@@ -1,9 +1,5 @@
 #include "./headers/sysSupport.h"
 
-/**
- * This module implements the TLB, Program Trap, and SYSCALL exception handlers.
- */
-
 #define SUP_PROC_STATE(support_struct) (support_struct->sup_exceptState[GENERALEXCEPT])
 #define SUP_SYSCALL_CODE(support_struct) ((int)SUP_PROC_STATE(support_struct).reg_a0)
 
@@ -29,7 +25,7 @@ pcb_t *UReceiveMsg(pcb_t *sender, unsigned int *payload)
 }
 
 /**
- * @brief Gestore delle system call.
+ * Support SYSCALLs handler.
  */
 static void SuppSystemcallHandler(support_t *support_structure)
 {
